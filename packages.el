@@ -53,5 +53,9 @@
 ;; ...Or *all* packages (NOT RECOMMENDED; will likely break things)
 ;; (unpin! t)
 (package! rainbow-delimiters)
-;; Completion & search
+;;for git
+(package! magit)
+(package! all-the-icons)
+
+
 
