@@ -50,12 +50,14 @@
 ;; ===============================
 ;; Font ayarları - P052
 ;; ===============================
-(setq doom-font (font-spec :family "P052"
-                            :size 15
-                            :weight 'bold
+(setq doom-font (font-spec :family "Noto Sans"
+                            :size 12
+                            :weight 'black
                             :slant 'italic
                             :width 'normal
                             :scalable t))
+
+(load! "lambda-line.el")
 
 ;; ===============================
 ;; Kod renkleri ve font-lock
