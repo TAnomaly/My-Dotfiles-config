@@ -142,9 +142,9 @@
   (setq doom-modeline-vcs-max-length 20)
   (setq doom-modeline-enable-word-count t)
   (setq doom-modeline-buffer-encoding t)
-  (setq doom-modeline-minor-modes t)
-  (setq doom-modeline-indent-info t)
-  (setq doom-modeline-persp-name t)
+  ;;(setq doom-modeline-minor-modes t)
+  ;;(setq doom-modeline-indent-info t)
+  ;;(setq doom-modeline-persp-name t)
   ;; Git diff ve branch
   (setq doom-modeline-git-diff t)
   (setq doom-modeline-git-command "git diff --numstat")
