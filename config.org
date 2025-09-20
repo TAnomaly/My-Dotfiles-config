@@ -1,0 +1,140 @@
+#+title: Config
+
+* Table of Contents :toc:
+- [[#doom-settings][Doom Settings]]
+- [[#keybindings][Keybindings]]
+  - [[#comment-line][Comment Line]]
+  - [[#toggle-bindings][Toggle bindings]]
+- [[#markdown][Markdown]]
+  - [[#headers][Headers]]
+  - [[#toggle-markdown-view][Toggle Markdown View]]
+- [[#org][Org]]
+  - [[#basic-settings][Basic Settings]]
+  - [[#headers-1][Headers]]
+- [[#sensible-defaults][Sensible Defaults]]
+- [[#cursor-line-number][Cursor & Line Number Colors]]
+- [[#code-colors][Code Colors]]
+
+* Doom Settings
+#+begin_src emacs-lisp
+(setq doom-theme 'doom-one)
+(setq doom-font (font-spec :family "JetBrains Mono Nerd Font" :size 13 :weight 'bold))
+#+end_src
+
+* Keybindings
+
+** Comment Line
+#+begin_src emacs-lisp
+(map! :leader
+      :desc "Comment line" "-" #'comment-line)
+#+end_src
+
+** Toggle bindings
+#+begin_src emacs-lisp
+(map! :leader
+      (:prefix ("t" . "toggle")
+       :desc "Toggle eshell split"            "e" #'+eshell/toggle
+       :desc "Toggle line highlight in frame" "h" #'hl-line-mode
+       :desc "Toggle line highlight globally" "H" #'global-hl-line-mode
+       :desc "Toggle line numbers"            "l" #'doom/toggle-line-numbers
+       :desc "Toggle markdown-view-mode"      "m" #'dt/toggle-markdown-view-mode
+       :desc "Toggle truncate lines"          "t" #'toggle-truncate-lines
+       :desc "Toggle treemacs"                "f" #'+treemacs/toggle
+       :desc "Toggle vterm split"             "v" #'+vterm/toggle))
+
+(map! :leader
+      (:prefix ("o" . "open here")
+       :desc "Open eshell here"    "e" #'+eshell/here
+       :desc "Open vterm here"     "v" #'+vterm/here))
+
+(setq display-line-numbers-type t)
+#+end_src
+
+* Markdown
+** Headers
+#+begin_src emacs-lisp
+(custom-set-faces
+ '(markdown-header-face ((t (:inherit font-lock-function-name-face :weight bold :family "variable-pitch"))))
+ '(markdown-header-face-1 ((t (:inherit markdown-header-face :height 1.6))))
+ '(markdown-header-face-2 ((t (:inherit markdown-header-face :height 1.5))))
+ '(markdown-header-face-3 ((t (:inherit markdown-header-face :height 1.4))))
+ '(markdown-header-face-4 ((t (:inherit markdown-header-face :height 1.3))))
+ '(markdown-header-face-5 ((t (:inherit markdown-header-face :height 1.2))))
+ '(markdown-header-face-6 ((t (:inherit markdown-header-face :height 1.1)))))
+#+end_src
+
+** Toggle Markdown View
+#+begin_src emacs-lisp
+(defun dt/toggle-markdown-view-mode ()
+  "Toggle between `markdown-mode' and `markdown-view-mode'."
+  (interactive)
+  (if (eq major-mode 'markdown-view-mode)
+      (markdown-mode)
+    (markdown-view-mode)))
+#+end_src
+
+* Org
+** Basic Settings
+#+begin_src emacs-lisp
+(setq org-directory "~/nc/Org/")
+(setq org-modern-table-vertical 1)
+(setq org-modern-table t)
+(add-hook 'org-mode-hook #'hl-todo-mode)
+#+end_src
+
+** Headers
+#+begin_src emacs-lisp
+(custom-theme-set-faces!
+ 'doom-one
+ '(org-level-8 :inherit outline-3 :height 1.0)
+ '(org-level-7 :inherit outline-3 :height 1.0)
+ '(org-level-6 :inherit outline-3 :height 1.1)
+ '(org-level-5 :inherit outline-3 :height 1.2)
+ '(org-level-4 :inherit outline-3 :height 1.3)
+ '(org-level-3 :inherit outline-3 :height 1.4)
+ '(org-level-2 :inherit outline-2 :height 1.5)
+ '(org-level-1 :inherit outline-1 :height 1.6)
+ '(org-document-title  :height 1.8 :bold t :underline nil))
+#+end_src
+
+* Sensible Defaults
+#+begin_src emacs-lisp
+(setq display-line-numbers-type t)   ;; Turn line numbers on
+(setq confirm-kill-emacs nil)        ;; Don't confirm on exit
+(setq initial-buffer-choice 'eshell) ;; Eshell is initial buffer
+#+end_src
+
+* Cursor & Line Number Colors
+#+begin_src emacs-lisp
+;; Aktif satır numarasını turuncu yap
+(custom-set-faces
+ '(line-number-current-line ((t (:foreground "orange" :weight bold))))
+ ;; Satır arka planını değiştirmiyoruz, normal kalıyor
+ '(hl-line ((t (:background nil)))))
+#+end_src
+
+* Code Colors
+#+begin_src emacs-lisp
+;; Kod renklendirmesi için belirgin pastel tonlar ve kalın font
+(custom-set-faces
+ ;; Fonksiyon isimleri -> mavi, kalın
+ '(font-lock-function-name-face ((t (:foreground "#42A5F5" :weight bold))))
+ ;; Değişkenler -> yeşil, kalın
+ '(font-lock-variable-name-face ((t (:foreground "#66BB6A" :weight bold))))
+ ;; Sabitler ve sayılar -> kırmızı, kalın
+ '(font-lock-constant-face ((t (:foreground "#EF5350" :weight bold))))
+ ;; Anahtar kelimeler -> mor, kalın
+ '(font-lock-keyword-face ((t (:foreground "#AB47BC" :weight bold))))
+ ;; Yorumlar -> koyu gri, italik
+ '(font-lock-comment-face ((t (:foreground "#757575" :slant italic))))
+ ;; Stringler -> turuncu, kalın
+ '(font-lock-string-face ((t (:foreground "#FFA726" :weight bold))))
+ ;; Type ve sınıflar -> açık mavi, kalın
+ '(font-lock-type-face ((t (:foreground "#29B6F6" :weight bold))))
+ ;; Preprocessor -> pembe, kalın
+ '(font-lock-preprocessor-face ((t (:foreground "#EC407A" :weight bold))))
+ ;; Boolean ve nil -> teal
+ '(font-lock-builtin-face ((t (:foreground "#26A69A" :weight bold))))
+ ;; Doküman stringleri -> açık sarı, italik
+ '(font-lock-doc-face ((t (:foreground "#FFD54F" :slant italic)))))
+#+end_src
