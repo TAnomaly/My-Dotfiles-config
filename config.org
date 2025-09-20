@@ -14,6 +14,7 @@
 - [[#sensible-defaults][Sensible Defaults]]
 - [[#cursor-line-number][Cursor & Line Number Colors]]
 - [[#code-colors][Code Colors]]
+- [[#doom-modeline][Doom Modeline]]
 
 * Doom Settings
 #+begin_src emacs-lisp
@@ -106,35 +107,68 @@
 
 * Cursor & Line Number Colors
 #+begin_src emacs-lisp
-;; Aktif satır numarasını turuncu yap
 (custom-set-faces
  '(line-number-current-line ((t (:foreground "orange" :weight bold))))
- ;; Satır arka planını değiştirmiyoruz, normal kalıyor
  '(hl-line ((t (:background nil)))))
 #+end_src
 
 * Code Colors
 #+begin_src emacs-lisp
-;; Kod renklendirmesi için belirgin pastel tonlar ve kalın font
 (custom-set-faces
- ;; Fonksiyon isimleri -> mavi, kalın
  '(font-lock-function-name-face ((t (:foreground "#42A5F5" :weight bold))))
- ;; Değişkenler -> yeşil, kalın
  '(font-lock-variable-name-face ((t (:foreground "#66BB6A" :weight bold))))
- ;; Sabitler ve sayılar -> kırmızı, kalın
  '(font-lock-constant-face ((t (:foreground "#EF5350" :weight bold))))
- ;; Anahtar kelimeler -> mor, kalın
  '(font-lock-keyword-face ((t (:foreground "#AB47BC" :weight bold))))
- ;; Yorumlar -> koyu gri, italik
  '(font-lock-comment-face ((t (:foreground "#757575" :slant italic))))
- ;; Stringler -> turuncu, kalın
  '(font-lock-string-face ((t (:foreground "#FFA726" :weight bold))))
- ;; Type ve sınıflar -> açık mavi, kalın
  '(font-lock-type-face ((t (:foreground "#29B6F6" :weight bold))))
- ;; Preprocessor -> pembe, kalın
  '(font-lock-preprocessor-face ((t (:foreground "#EC407A" :weight bold))))
- ;; Boolean ve nil -> teal
  '(font-lock-builtin-face ((t (:foreground "#26A69A" :weight bold))))
- ;; Doküman stringleri -> açık sarı, italik
  '(font-lock-doc-face ((t (:foreground "#FFD54F" :slant italic)))))
+#+end_src
+
+* Doom Modeline Full LazyVim
+#+begin_src emacs-lisp
+(use-package! doom-modeline
+  :hook (after-init . doom-modeline-mode)
+  :init
+  (setq doom-modeline-height 25)
+  (setq doom-modeline-bar-width 4)
+  (setq doom-modeline-icon t)
+  (setq doom-modeline-major-mode-icon t)
+  (setq doom-modeline-buffer-file-name-style 'truncate-upto-project)
+  (setq doom-modeline-line-number t)
+  (setq doom-modeline-major-mode-color-icon t)
+  (setq doom-modeline-vcs-max-length 20)
+  (setq doom-modeline-enable-word-count t)
+  (setq doom-modeline-buffer-encoding t)
+  (setq doom-modeline-minor-modes t)
+  (setq doom-modeline-indent-info t)
+  (setq doom-modeline-persp-name t)
+  ;; Git diff ve branch
+  (setq doom-modeline-git-diff t)
+  (setq doom-modeline-git-command "git diff --numstat")
+  (setq doom-modeline-github t)
+  ;; Saat ve zaman
+  (setq doom-modeline-time t)
+  (setq display-time-format "%H:%M %d-%m-%Y"))
+
+(custom-set-faces
+ '(doom-modeline-bar ((t (:background "#FFA500"))))
+ '(doom-modeline-buffer-file ((t (:foreground "#FFFFFF" :weight bold))))
+ '(doom-modeline-buffer-modified ((t (:foreground "#EF5350" :weight bold))))
+ '(doom-modeline-buffer-major-mode ((t (:foreground "#42A5F5" :weight bold))))
+ '(doom-modeline-evil-normal-state ((t (:background "#4CAF50" :foreground "#000000" :weight bold))))
+ '(doom-modeline-evil-insert-state ((t (:background "#2196F3" :foreground "#FFFFFF" :weight bold))))
+ '(doom-modeline-evil-visual-state ((t (:background "#FFC107" :foreground "#000000" :weight bold))))
+ '(doom-modeline-evil-replace-state ((t (:background "#F44336" :foreground "#FFFFFF" :weight bold))))
+ '(doom-modeline-git-added ((t (:foreground "#66BB6A"))))
+ '(doom-modeline-git-removed ((t (:foreground "#EF5350"))))
+ '(doom-modeline-git-modified ((t (:foreground "#FFC107")))))
+
+(use-package! evil
+  :init
+  (evil-mode 1)
+  :config
+  (setq doom-modeline-evil-state t))
 #+end_src
