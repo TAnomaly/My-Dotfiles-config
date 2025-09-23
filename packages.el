@@ -57,5 +57,14 @@
 (package! magit)
 (package! all-the-icons)
 
+;; Telescope-like functionality for Emacs
+(package! consult)
+(package! embark)
+(package! embark-consult)
+(package! marginalia)
+
+;; Rust support with full IDE features
+(package! rustic)
+(package! rust-mode)
 
 
