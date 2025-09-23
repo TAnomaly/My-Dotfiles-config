@@ -12,9 +12,12 @@
   - [[#basic-settings][Basic Settings]]
   - [[#headers-1][Headers]]
 - [[#sensible-defaults][Sensible Defaults]]
-- [[#cursor-line-number][Cursor & Line Number Colors]]
+- [[#cursor-line-number][Cursor & Line Number Colors]]z
 - [[#code-colors][Code Colors]]
-- [[#doom-modeline][Doom Modeline]]
+- [[#telescope-like-search-consult--embark--marginalia][Telescope-like Search (Consult + Embark + Marginalia)]]
+  - [[#lazyvim-style-keybindings][LazyVim Style Keybindings]]
+- [[#rust-development-setup][Rust Development Setup]]
+- [[#doom-modeline-full-lazyvim][Doom Modeline Full LazyVim]]
 
 * Doom Settings
 #+begin_src emacs-lisp
@@ -125,6 +128,217 @@
  '(font-lock-preprocessor-face ((t (:foreground "#EC407A" :weight bold))))
  '(font-lock-builtin-face ((t (:foreground "#26A69A" :weight bold))))
  '(font-lock-doc-face ((t (:foreground "#FFD54F" :slant italic)))))
+#+end_src
+
+* Telescope-like Search (Consult + Embark + Marginalia)
+#+begin_src emacs-lisp
+;; Enhanced completion with Marginalia
+(use-package! marginalia
+  :bind (:map minibuffer-local-map
+         ("M-A" . marginalia-cycle))
+  :init
+  (marginalia-mode))
+
+;; Consult - Telescope alternative for Emacs
+(use-package! consult
+  :bind (;; C-c bindings in `mode-specific-map'
+         ("C-c M-x" . consult-mode-command)
+         ("C-c h" . consult-history)
+         ("C-c k" . consult-kmacro)
+         ("C-c m" . consult-man)
+         ("C-c i" . consult-info)
+         ([remap Info-search] . consult-info)
+         ;; C-x bindings in `ctl-x-map'
+         ("C-x M-:" . consult-complex-command)
+         ("C-x b" . consult-buffer)
+         ("C-x r b" . consult-bookmark)
+         ;; Custom M-# bindings for fast register access
+         ("M-#" . consult-register-load)
+         ("M-'" . consult-register-store)
+         ("C-M-#" . consult-register)
+         ;; Other custom bindings
+         ("M-y" . consult-yank-pop)
+         ;; M-g bindings in `goto-map'
+         ("M-g e" . consult-compile-error)
+         ("M-g f" . consult-flymake)
+         ("M-g g" . consult-goto-line)
+         ("M-g M-g" . consult-goto-line)
+         ("M-g o" . consult-outline)
+         ("M-g m" . consult-mark)
+         ("M-g k" . consult-global-mark)
+         ("M-g i" . consult-imenu)
+         ("M-g I" . consult-imenu-multi)
+         ;; M-s bindings in `search-map'
+         ("M-s d" . consult-find)
+         ("M-s c" . consult-locate)
+         ("M-s g" . consult-grep)
+         ("M-s G" . consult-git-grep)
+         ("M-s r" . consult-ripgrep)
+         ("M-s l" . consult-line)
+         ("M-s L" . consult-line-multi)
+         ("M-s k" . consult-keep-lines)
+         ("M-s u" . consult-focus-lines)
+         ;; Isearch integration
+         ("M-s e" . consult-isearch-history)
+         :map isearch-mode-map
+         ("M-e" . consult-isearch-history)
+         ("M-s e" . consult-isearch-history)
+         ("M-s l" . consult-line)
+         ("M-s L" . consult-line-multi)
+         ;; Minibuffer history
+         :map minibuffer-local-map
+         ("M-s" . consult-history)
+         ("M-r" . consult-history))
+
+  :hook (completion-list-mode . consult-preview-at-point-mode)
+
+  :init
+  (setq register-preview-delay 0.5
+        register-preview-function #'consult-register-format)
+
+  (advice-add #'register-preview :override #'consult-register-window)
+
+  (setq xref-show-xrefs-function #'consult-xref
+        xref-show-definitions-function #'consult-xref)
+
+  :config
+  ;; Optionally configure preview key
+  (consult-customize
+   consult-theme :preview-key '(:debounce 0.2 any)
+   consult-ripgrep consult-git-grep consult-grep
+   consult-bookmark consult-recent-file consult-xref
+   consult--source-bookmark consult--source-file-register
+   consult--source-recent-file consult--source-project-recent-file
+   :preview-key '(:debounce 0.4 any))
+
+  ;; Use Consult to select xref locations
+  (setq consult-narrow-key "<"))
+
+;; Embark for contextual actions
+(use-package! embark
+  :bind
+  (("C-." . embark-act)
+   ("C-;" . embark-dwim)
+   ("C-h B" . embark-bindings))
+
+  :init
+  (setq prefix-help-command #'embark-prefix-help-command)
+
+  :config
+  ;; Hide the mode line of the Embark live/completions buffers
+  (add-to-list 'display-buffer-alist
+               '("\\`\\*Embark Collect \\(Live\\|Completions\\)\\*"
+                 nil
+                 (window-parameters (mode-line-format . none)))))
+
+;; Consult users will also want the embark-consult package.
+(use-package! embark-consult
+  :hook
+  (embark-collect-mode . consult-preview-at-point-mode))
+#+end_src
+
+** LazyVim Style Keybindings
+#+begin_src emacs-lisp
+;; LazyVim-style leader key bindings for telescope-like functionality
+(map! :leader
+      (:prefix ("f" . "find")
+       :desc "Find file"                    "f" #'consult-find
+       :desc "Find file in project"        "p" #'+default/find-in-project
+       :desc "Recent files"                 "r" #'consult-recent-file
+       :desc "Find buffer"                  "b" #'consult-buffer
+       :desc "Find file by name"            "n" #'consult-locate
+       :desc "Project buffers"              "B" #'consult-project-buffer))
+
+(map! :leader
+      (:prefix ("s" . "search")
+       :desc "Search in buffer"             "s" #'consult-line
+       :desc "Search in project"            "p" #'consult-ripgrep
+       :desc "Search with grep"             "g" #'consult-grep
+       :desc "Search git grep"              "G" #'consult-git-grep
+       :desc "Search imenu"                 "i" #'consult-imenu
+       :desc "Search outline"               "o" #'consult-outline
+       :desc "Search marks"                 "m" #'consult-mark
+       :desc "Search yank history"          "y" #'consult-yank-pop))
+
+(map! :leader
+      (:prefix ("g" . "goto")
+       :desc "Go to line"                   "l" #'consult-goto-line
+       :desc "Go to mark"                   "m" #'consult-mark
+       :desc "Go to global mark"            "M" #'consult-global-mark
+       :desc "Go to error"                  "e" #'consult-compile-error
+       :desc "Go to flymake error"          "f" #'consult-flymake))
+
+;; Additional telescope-like bindings
+(map! :leader
+      :desc "Switch buffer"                "," #'consult-buffer
+      :desc "Find file"                    "." #'consult-find
+      :desc "Search in buffer"             "/" #'consult-line
+      :desc "Command palette"              ":" #'execute-extended-command)
+
+;; Quick access like Telescope in LazyVim
+(map! "C-p" #'consult-find          ; Quick file finder
+      "C-S-p" #'execute-extended-command  ; Command palette
+      "C-f" #'consult-line          ; Search in current buffer
+      "C-S-f" #'consult-ripgrep)    ; Search in project
+#+end_src
+
+* Rust Development Setup
+#+begin_src emacs-lisp
+;; Rust configuration with full IDE features
+(use-package! rustic
+  :bind (:map rustic-mode-map
+         ("M-j" . lsp-ui-imenu)
+         ("M-?" . lsp-find-references)
+         ("C-c C-c l" . flycheck-list-errors)
+         ("C-c C-c a" . lsp-execute-code-action)
+         ("C-c C-c r" . lsp-rename)
+         ("C-c C-c q" . lsp-workspace-restart)
+         ("C-c C-c Q" . lsp-workspace-shutdown)
+         ("C-c C-c s" . lsp-rust-analyzer-status))
+  :config
+  ;; uncomment for less flashiness
+  ;; (setq lsp-eldoc-hook nil)
+  ;; (setq lsp-enable-symbol-highlighting nil)
+  ;; (setq lsp-signature-auto-activate nil)
+
+  ;; comment to disable rustfmt on save
+  (setq rustic-format-on-save t)
+  (add-hook 'rustic-mode-hook 'rk/rustic-mode-hook))
+
+(defun rk/rustic-mode-hook ()
+  ;; so that run C-c C-c C-r works without having to confirm, but don't try to
+  ;; save rust buffers that are not file visiting. Once
+  ;; https://github.com/brotzeit/rustic/issues/253 has been resolved this should
+  ;; no longer be necessary.
+  (when buffer-file-name
+    (setq-local buffer-save-without-query t))
+  (add-hook 'before-save-hook 'lsp-format-buffer nil t))
+
+;; LSP configuration for Rust
+(use-package! lsp-mode
+  :commands lsp
+  :custom
+  ;; what to use when checking on-save. "check" is default, I prefer clippy
+  (lsp-rust-analyzer-cargo-watch-command "clippy")
+  (lsp-eldoc-render-all t)
+  (lsp-idle-delay 0.6)
+  ;; enable / disable the hints as you prefer:
+  (lsp-rust-analyzer-server-display-inlay-hints t)
+  (lsp-rust-analyzer-display-lifetime-elision-hints-enable "skip_trivial")
+  (lsp-rust-analyzer-display-chaining-hints t)
+  (lsp-rust-analyzer-display-lifetime-elision-hints-use-parameter-names nil)
+  (lsp-rust-analyzer-display-closure-return-type-hints t)
+  (lsp-rust-analyzer-display-parameter-hints nil)
+  (lsp-rust-analyzer-display-reborrow-hints nil)
+  :config
+  (add-hook 'lsp-mode-hook 'lsp-ui-mode))
+
+(use-package! lsp-ui
+  :commands lsp-ui-mode
+  :custom
+  (lsp-ui-peek-always-show t)
+  (lsp-ui-sideline-show-hover t)
+  (lsp-ui-doc-enable nil))
 #+end_src
 
 * Doom Modeline Full LazyVim
