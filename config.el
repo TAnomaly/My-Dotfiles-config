@@ -1,159 +1,321 @@
-;;; $DOOMDIR/config.el -*- lexical-binding: t; -*-
-
-;; ===============================
-;; Tema ve Line Numbers
-;; ===============================
 (setq doom-theme 'doom-one)
-(setq display-line-numbers-type 'relative)
-
-;; ===============================
-;; Org files
-;; ===============================
-(setq org-directory "~/org/")
-
-;; ===============================
-;; Treemacs / vterm toggle
-;; ===============================
-(map! :leader
-      :desc "Treemacs Toggle"
-      "e" #'treemacs)
+(setq doom-font (font-spec :family "JetBrains Mono Nerd Font" :size 13 :weight 'bold))
 
 (map! :leader
-      :desc "VTerm Toggle"
-      "j" #'vterm)
+      :desc "Comment line" "-" #'comment-line)
 
-;; ===============================
-;; Doom Modeline - estetik, küçük, ikonlu ve saatli
-;; ===============================
-(setq doom-modeline-height 14
-      doom-modeline-bar-width 3
-      doom-modeline-icon t
-      doom-modeline-major-mode-icon t
-      doom-modeline-minor-modes nil
-      doom-modeline-enable-word-count t
-      doom-modeline-buffer-file-name-style 'relative-to-project
-      doom-modeline-project-detection 'projectile
-      doom-modeline-github nil
-      doom-modeline-gnus nil
-      doom-modeline-irc nil
-      doom-modeline-lsp t
-      doom-modeline-buffer-state-icon t
-      doom-modeline-buffer-modification-icon t
-      doom-modeline-buffer-encoding t
-      doom-modeline-major-mode-color-icon t
-      doom-modeline-env-enable-time t)
+(map! :leader
+      (:prefix ("t" . "toggle")
+       :desc "Toggle eshell split"            "e" #'+eshell/toggle
+       :desc "Toggle line highlight in frame" "h" #'hl-line-mode
+       :desc "Toggle line highlight globally" "H" #'global-hl-line-mode
+       :desc "Toggle line numbers"            "l" #'doom/toggle-line-numbers
+       :desc "Toggle markdown-view-mode"      "m" #'dt/toggle-markdown-view-mode
+       :desc "Toggle truncate lines"          "t" #'toggle-truncate-lines
+       :desc "Toggle treemacs"                "f" #'+treemacs/toggle
+       :desc "Toggle vterm split"             "v" #'+vterm/toggle))
 
-(display-time-mode 1)
-(setq display-time-format "%H:%M")
-(doom-modeline-mode 1)
+(map! :leader
+      (:prefix ("o" . "open here")
+       :desc "Open eshell here"    "e" #'+eshell/here
+       :desc "Open vterm here"     "v" #'+vterm/here))
 
-;; ===============================
-;; Font ayarları - P052
-;; ===============================
-(setq doom-font (font-spec :family "Noto Sans"
-                            :size 12
-                            :weight 'black
-                            :slant 'italic
-                            :width 'normal
-                            :scalable t))
+(setq display-line-numbers-type t)
 
-(load! "lambda-line.el")
-
-;; ===============================
-;; Kod renkleri ve font-lock
-;; ===============================
-(custom-set-faces!
- '(font-lock-builtin-face :foreground "#fd007f" :weight bold :slant italic)
- '(font-lock-function-name-face :foreground "#f6ff00" :weight bold :slant italic)
- '(font-lock-variable-name-face :foreground "#95ff00")
- '(font-lock-string-face :foreground "#ff6fcf")
- '(font-lock-comment-face :foreground "#FFD700" :slant italic)
- '(font-lock-keyword-face :foreground "#fd007f" :weight bold)
- '(font-lock-type-face :foreground "#00fcfc" :weight bold)
- '(default :foreground "#E6D3B8"))
-
-(add-hook 'prog-mode-hook
-          (lambda ()
-            (rainbow-delimiters-mode 1)
-            (font-lock-mode 1)))
-
-;; Satır numaraları renklendirme
 (custom-set-faces
- '(line-number ((t (:foreground "#00ff00"))))
- '(line-number-current-line ((t (:foreground "#ff7700" :weight bold)))))
+ '(markdown-header-face ((t (:inherit font-lock-function-name-face :weight bold :family "variable-pitch"))))
+ '(markdown-header-face-1 ((t (:inherit markdown-header-face :height 1.6))))
+ '(markdown-header-face-2 ((t (:inherit markdown-header-face :height 1.5))))
+ '(markdown-header-face-3 ((t (:inherit markdown-header-face :height 1.4))))
+ '(markdown-header-face-4 ((t (:inherit markdown-header-face :height 1.3))))
+ '(markdown-header-face-5 ((t (:inherit markdown-header-face :height 1.2))))
+ '(markdown-header-face-6 ((t (:inherit markdown-header-face :height 1.1)))))
 
-;; Aktif satır
-(global-hl-line-mode 1)
-
-;; İmleç renkleri
-(setq evil-normal-state-cursor '(box "#ff7700"))
-(setq evil-insert-state-cursor '(bar "#ff7700"))
-(setq evil-visual-state-cursor '(box "#ff7700"))
-
-;; ===============================
-;; Tab ve indent ayarları
-;; ===============================
-(setq-default tab-width 4
-              evil-shift-width 4
-              indent-tabs-mode nil
-              tab-always-indent 'complete)
-
-(defun my-indent-or-complete ()
-  "TAB basınca önce indent yap, gerekiyorsa completion tetikle."
+(defun dt/toggle-markdown-view-mode ()
+  "Toggle between `markdown-mode' and `markdown-view-mode'."
   (interactive)
-  (if (looking-at "\\_>")
-      (company-indent-or-complete-common)
-    (indent-for-tab-command)))
+  (if (eq major-mode 'markdown-view-mode)
+      (markdown-mode)
+    (markdown-view-mode)))
 
-(define-key evil-insert-state-map (kbd "TAB") 'my-indent-or-complete)
+(setq org-directory "~/nc/Org/")
+(setq org-modern-table-vertical 1)
+(setq org-modern-table t)
+(add-hook 'org-mode-hook #'hl-todo-mode)
 
-;; C/C++ blok girintisi
-(add-hook 'c-mode-common-hook
-          (lambda ()
-            (setq c-basic-offset 4)
-            (local-set-key (kbd "TAB") 'c-indent-line-or-region)))
+(custom-theme-set-faces!
+ 'doom-one
+ '(org-level-8 :inherit outline-3 :height 1.0)
+ '(org-level-7 :inherit outline-3 :height 1.0)
+ '(org-level-6 :inherit outline-3 :height 1.1)
+ '(org-level-5 :inherit outline-3 :height 1.2)
+ '(org-level-4 :inherit outline-3 :height 1.3)
+ '(org-level-3 :inherit outline-3 :height 1.4)
+ '(org-level-2 :inherit outline-2 :height 1.5)
+ '(org-level-1 :inherit outline-1 :height 1.6)
+ '(org-document-title  :height 1.8 :bold t :underline nil))
 
-;; ===============================
-;; LSP Mode (C/C++)
-;; ===============================
-(use-package! lsp-mode
-  :hook (c-mode . lsp)
-  :commands lsp)
+(setq display-line-numbers-type t)   ;; Turn line numbers on
+(setq confirm-kill-emacs nil)        ;; Don't confirm on exit
+(setq initial-buffer-choice 'eshell) ;; Eshell is initial buffer
 
-;; Flycheck
-(use-package! flycheck
-  :hook (prog-mode . flycheck-mode)
-  :config
-  (setq flycheck-highlighting-mode 'lines
-        flycheck-indication-mode 'right-fringe))
+(custom-set-faces
+ '(line-number-current-line ((t (:foreground "orange" :weight bold))))
+ '(hl-line ((t (:background nil)))))
 
-;; Completion/snippet çakışması
-(setq company-idle-delay nil)
-(setq yas-trigger-key "C-c y")
+(custom-set-faces
+ '(font-lock-function-name-face ((t (:foreground "#42A5F5" :weight bold))))
+ '(font-lock-variable-name-face ((t (:foreground "#66BB6A" :weight bold))))
+ '(font-lock-constant-face ((t (:foreground "#EF5350" :weight bold))))
+ '(font-lock-keyword-face ((t (:foreground "#AB47BC" :weight bold))))
+ '(font-lock-comment-face ((t (:foreground "#757575" :slant italic))))
+ '(font-lock-string-face ((t (:foreground "#FFA726" :weight bold))))
+ '(font-lock-type-face ((t (:foreground "#29B6F6" :weight bold))))
+ '(font-lock-preprocessor-face ((t (:foreground "#EC407A" :weight bold))))
+ '(font-lock-builtin-face ((t (:foreground "#26A69A" :weight bold))))
+ '(font-lock-doc-face ((t (:foreground "#FFD54F" :slant italic)))))
 
-;; ===============================
-;; Modern Completion: Vertico + Consult + Orderless
-;; ===============================
-;; Vertico (completion UI)
-(use-package! vertico
+;; Enhanced completion with Marginalia
+(use-package! marginalia
+  :bind (:map minibuffer-local-map
+         ("M-A" . marginalia-cycle))
   :init
-  (vertico-mode 1))
+  (marginalia-mode))
 
-;; Orderless (flexible completion style)
-(use-package! orderless
-  :init
-  (setq completion-styles '(orderless basic)
-        completion-category-defaults nil
-        completion-category-overrides '((file (styles basic partial-completion)))))
-
-;; Consult (gelişmiş arama ve navigation)
+;; Consult - Telescope alternative for Emacs
 (use-package! consult
-  :bind (("C-s" . consult-line)       ;; buffer içinde arama
-         ("C-r" . consult-line)       ;; geriye arama
+  :bind (;; C-c bindings in `mode-specific-map'
+         ("C-c M-x" . consult-mode-command)
+         ("C-c h" . consult-history)
+         ("C-c k" . consult-kmacro)
+         ("C-c m" . consult-man)
+         ("C-c i" . consult-info)
+         ([remap Info-search] . consult-info)
+         ;; C-x bindings in `ctl-x-map'
+         ("C-x M-:" . consult-complex-command)
+         ("C-x b" . consult-buffer)
+         ("C-x r b" . consult-bookmark)
+         ;; Custom M-# bindings for fast register access
+         ("M-#" . consult-register-load)
+         ("M-'" . consult-register-store)
+         ("C-M-#" . consult-register)
+         ;; Other custom bindings
+         ("M-y" . consult-yank-pop)
+         ;; M-g bindings in `goto-map'
+         ("M-g e" . consult-compile-error)
+         ("M-g f" . consult-flymake)
+         ("M-g g" . consult-goto-line)
+         ("M-g M-g" . consult-goto-line)
+         ("M-g o" . consult-outline)
+         ("M-g m" . consult-mark)
+         ("M-g k" . consult-global-mark)
+         ("M-g i" . consult-imenu)
+         ("M-g I" . consult-imenu-multi)
+         ;; M-s bindings in `search-map'
+         ("M-s d" . consult-find)
+         ("M-s c" . consult-locate)
+         ("M-s g" . consult-grep)
+         ("M-s G" . consult-git-grep)
+         ("M-s r" . consult-ripgrep)
+         ("M-s l" . consult-line)
+         ("M-s L" . consult-line-multi)
+         ("M-s k" . consult-keep-lines)
+         ("M-s u" . consult-focus-lines)
+         ;; Isearch integration
+         ("M-s e" . consult-isearch-history)
+         :map isearch-mode-map
+         ("M-e" . consult-isearch-history)
+         ("M-s e" . consult-isearch-history)
+         ("M-s l" . consult-line)
+         ("M-s L" . consult-line-multi)
+         ;; Minibuffer history
          :map minibuffer-local-map
-         ("C-r" . consult-history)))  ;; minibuffer history
+         ("M-s" . consult-history)
+         ("M-r" . consult-history))
 
-;; Ripgrep ile proje çapında arama
+  :hook (completion-list-mode . consult-preview-at-point-mode)
+
+  :init
+  (setq register-preview-delay 0.5
+        register-preview-function #'consult-register-format)
+
+  (advice-add #'register-preview :override #'consult-register-window)
+
+  (setq xref-show-xrefs-function #'consult-xref
+        xref-show-definitions-function #'consult-xref)
+
+  :config
+  ;; Optionally configure preview key
+  (consult-customize
+   consult-theme :preview-key '(:debounce 0.2 any)
+   consult-ripgrep consult-git-grep consult-grep
+   consult-bookmark consult-recent-file consult-xref
+   consult--source-bookmark consult--source-file-register
+   consult--source-recent-file consult--source-project-recent-file
+   :preview-key '(:debounce 0.4 any))
+
+  ;; Use Consult to select xref locations
+  (setq consult-narrow-key "<"))
+
+;; Embark for contextual actions
+(use-package! embark
+  :bind
+  (("C-." . embark-act)
+   ("C-;" . embark-dwim)
+   ("C-h B" . embark-bindings))
+
+  :init
+  (setq prefix-help-command #'embark-prefix-help-command)
+
+  :config
+  ;; Hide the mode line of the Embark live/completions buffers
+  (add-to-list 'display-buffer-alist
+               '("\\`\\*Embark Collect \\(Live\\|Completions\\)\\*"
+                 nil
+                 (window-parameters (mode-line-format . none)))))
+
+;; Consult users will also want the embark-consult package.
+(use-package! embark-consult
+  :hook
+  (embark-collect-mode . consult-preview-at-point-mode))
+
+;; LazyVim-style leader key bindings for telescope-like functionality
 (map! :leader
-      :desc "Ripgrep Search"
-      "s r" #'consult-ripgrep)
+      (:prefix ("f" . "find")
+       :desc "Find file"                    "f" #'consult-find
+       :desc "Find file in project"        "p" #'+default/find-in-project
+       :desc "Recent files"                 "r" #'consult-recent-file
+       :desc "Find buffer"                  "b" #'consult-buffer
+       :desc "Find file by name"            "n" #'consult-locate
+       :desc "Project buffers"              "B" #'consult-project-buffer))
+
+(map! :leader
+      (:prefix ("s" . "search")
+       :desc "Search in buffer"             "s" #'consult-line
+       :desc "Search in project"            "p" #'consult-ripgrep
+       :desc "Search with grep"             "g" #'consult-grep
+       :desc "Search git grep"              "G" #'consult-git-grep
+       :desc "Search imenu"                 "i" #'consult-imenu
+       :desc "Search outline"               "o" #'consult-outline
+       :desc "Search marks"                 "m" #'consult-mark
+       :desc "Search yank history"          "y" #'consult-yank-pop))
+
+(map! :leader
+      (:prefix ("g" . "goto")
+       :desc "Go to line"                   "l" #'consult-goto-line
+       :desc "Go to mark"                   "m" #'consult-mark
+       :desc "Go to global mark"            "M" #'consult-global-mark
+       :desc "Go to error"                  "e" #'consult-compile-error
+       :desc "Go to flymake error"          "f" #'consult-flymake))
+
+;; Additional telescope-like bindings
+(map! :leader
+      :desc "Switch buffer"                "," #'consult-buffer
+      :desc "Find file"                    "." #'consult-find
+      :desc "Search in buffer"             "/" #'consult-line
+      :desc "Command palette"              ":" #'execute-extended-command)
+
+;; Quick access like Telescope in LazyVim
+(map! "C-p" #'consult-find          ; Quick file finder
+      "C-S-p" #'execute-extended-command  ; Command palette
+      "C-f" #'consult-line          ; Search in current buffer
+      "C-S-f" #'consult-ripgrep)    ; Search in project
+
+;; Rust configuration with full IDE features
+(use-package! rustic
+  :bind (:map rustic-mode-map
+         ("M-j" . lsp-ui-imenu)
+         ("M-?" . lsp-find-references)
+         ("C-c C-c l" . flycheck-list-errors)
+         ("C-c C-c a" . lsp-execute-code-action)
+         ("C-c C-c r" . lsp-rename)
+         ("C-c C-c q" . lsp-workspace-restart)
+         ("C-c C-c Q" . lsp-workspace-shutdown)
+         ("C-c C-c s" . lsp-rust-analyzer-status))
+  :config
+  ;; uncomment for less flashiness
+  ;; (setq lsp-eldoc-hook nil)
+  ;; (setq lsp-enable-symbol-highlighting nil)
+  ;; (setq lsp-signature-auto-activate nil)
+
+  ;; comment to disable rustfmt on save
+  (setq rustic-format-on-save t)
+  (add-hook 'rustic-mode-hook 'rk/rustic-mode-hook))
+
+(defun rk/rustic-mode-hook ()
+  ;; so that run C-c C-c C-r works without having to confirm, but don't try to
+  ;; save rust buffers that are not file visiting. Once
+  ;; https://github.com/brotzeit/rustic/issues/253 has been resolved this should
+  ;; no longer be necessary.
+  (when buffer-file-name
+    (setq-local buffer-save-without-query t))
+  (add-hook 'before-save-hook 'lsp-format-buffer nil t))
+
+;; LSP configuration for Rust
+(use-package! lsp-mode
+  :commands lsp
+  :custom
+  ;; what to use when checking on-save. "check" is default, I prefer clippy
+  (lsp-rust-analyzer-cargo-watch-command "clippy")
+  (lsp-eldoc-render-all t)
+  (lsp-idle-delay 0.6)
+  ;; enable / disable the hints as you prefer:
+  (lsp-rust-analyzer-server-display-inlay-hints t)
+  (lsp-rust-analyzer-display-lifetime-elision-hints-enable "skip_trivial")
+  (lsp-rust-analyzer-display-chaining-hints t)
+  (lsp-rust-analyzer-display-lifetime-elision-hints-use-parameter-names nil)
+  (lsp-rust-analyzer-display-closure-return-type-hints t)
+  (lsp-rust-analyzer-display-parameter-hints nil)
+  (lsp-rust-analyzer-display-reborrow-hints nil)
+  :config
+  (add-hook 'lsp-mode-hook 'lsp-ui-mode))
+
+(use-package! lsp-ui
+  :commands lsp-ui-mode
+  :custom
+  (lsp-ui-peek-always-show t)
+  (lsp-ui-sideline-show-hover t)
+  (lsp-ui-doc-enable nil))
+
+(use-package! doom-modeline
+  :hook (after-init . doom-modeline-mode)
+  :init
+  (setq doom-modeline-height 25)
+  (setq doom-modeline-bar-width 4)
+  (setq doom-modeline-icon t)
+  (setq doom-modeline-major-mode-icon t)
+  (setq doom-modeline-buffer-file-name-style 'truncate-upto-project)
+  (setq doom-modeline-line-number t)
+  (setq doom-modeline-major-mode-color-icon t)
+  (setq doom-modeline-vcs-max-length 20)
+  (setq doom-modeline-enable-word-count t)
+  (setq doom-modeline-buffer-encoding t)
+  ;;(setq doom-modeline-minor-modes t)
+  ;;(setq doom-modeline-indent-info t)
+  ;;(setq doom-modeline-persp-name t)
+  ;; Git diff ve branch
+  (setq doom-modeline-git-diff t)
+  (setq doom-modeline-git-command "git diff --numstat")
+  (setq doom-modeline-github t)
+  ;; Saat ve zaman
+  (setq doom-modeline-time t)
+  (setq display-time-format "%H:%M %d-%m-%Y"))
+
+(custom-set-faces
+ '(doom-modeline-bar ((t (:background "#FFA500"))))
+ '(doom-modeline-buffer-file ((t (:foreground "#FFFFFF" :weight bold))))
+ '(doom-modeline-buffer-modified ((t (:foreground "#EF5350" :weight bold))))
+ '(doom-modeline-buffer-major-mode ((t (:foreground "#42A5F5" :weight bold))))
+ '(doom-modeline-evil-normal-state ((t (:background "#4CAF50" :foreground "#000000" :weight bold))))
+ '(doom-modeline-evil-insert-state ((t (:background "#2196F3" :foreground "#FFFFFF" :weight bold))))
+ '(doom-modeline-evil-visual-state ((t (:background "#FFC107" :foreground "#000000" :weight bold))))
+ '(doom-modeline-evil-replace-state ((t (:background "#F44336" :foreground "#FFFFFF" :weight bold))))
+ '(doom-modeline-git-added ((t (:foreground "#66BB6A"))))
+ '(doom-modeline-git-removed ((t (:foreground "#EF5350"))))
+ '(doom-modeline-git-modified ((t (:foreground "#FFC107")))))
+
+(use-package! evil
+  :init
+  (evil-mode 1)
+  :config
+  (setq doom-modeline-evil-state t))
