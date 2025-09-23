@@ -1,0 +1,236 @@
+{
+    // Genel Ayarlar
+    "workbench.colorTheme": "Doom Emacs",
+    "workbench.startupEditor": "none",
+    "workbench.editor.showTabs": "multiple",
+    "workbench.sideBar.location": "left",
+    "workbench.panel.defaultLocation": "bottom",
+    "workbench.activityBar.location": "default",
+    "window.menuBarVisibility": "toggle",
+    "window.zoomLevel": 0,
+    "zenMode.hideStatusBar": false,
+    "zenMode.hideLineNumbers": false,
+    "winopacity.opacity": 255,
+    // Editör Ayarları
+    "editor.fontSize": 12,
+    "editor.fontFamily": "JetBrains Mono Nerd Font",
+    "editor.fontWeight": "bold",
+    "editor.fontLigatures": true,
+    "editor.lineHeight": 1.6,
+    "editor.lineNumbers": "relative",
+    "editor.renderLineHighlight": "all",
+    "editor.cursorBlinking": "smooth",
+    "editor.cursorStyle": "line",
+    "editor.minimap.enabled": false,
+    "editor.bracketPairColorization.enabled": true,
+    "editor.guides.bracketPairs": "active",
+    "editor.formatOnSave": true,
+    "editor.renderWhitespace": "none",
+    // Sözdizimi Renklendirme (Emacs tabanlı renk şeması)
+    "editor.tokenColorCustomizations": {
+        "textMateRules": [
+            {
+                "name": "Functions",
+                "scope": [
+                    "entity.name.function",
+                    "support.function",
+                    "entity.name.method",
+                    "meta.function-call.generic"
+                ],
+                "settings": {
+                    "foreground": "#deed0a",
+                    "fontStyle": "bold"
+                }
+            },
+            {
+                "name": "Namespace (std vs.)",
+                "scope": [
+                    "entity.name.namespace",
+                    "support.type.sys-types",
+                    "entity.name.scope-resolution"
+                ],
+                "settings": {
+                    "foreground": "#EF5350",
+                    "fontStyle": "bold"
+                }
+            },
+            {
+                "name": "Variables",
+                "scope": [
+                    "variable",
+                    "variable.other",
+                    "variable.parameter",
+                    "variable.language",
+                    "support.variable"
+                ],
+                "settings": {
+                    "foreground": "#66ff00",
+                    "fontStyle": "bold"
+                }
+            },
+            {
+                "name": "Constants",
+                "scope": [
+                    "constant",
+                    "constant.numeric",
+                    "constant.language",
+                    "constant.character",
+                    "constant.other"
+                ],
+                "settings": {
+                    "foreground": "#EF5350",
+                    "fontStyle": "bold"
+                }
+            },
+            {
+                "name": "Keywords",
+                "scope": [
+                    "keyword",
+                    "keyword.control",
+                    "keyword.operator",
+                    "keyword.other",
+                    "storage.modifier",
+                    "storage.type.function"
+                ],
+                "settings": {
+                    "foreground": "#AB47BC",
+                    "fontStyle": "bold"
+                }
+            },
+            {
+                "name": "Comments",
+                "scope": [
+                    "comment",
+                    "comment.line",
+                    "comment.block"
+                ],
+                "settings": {
+                    "foreground": "#757575",
+                    "fontStyle": "italic"
+                }
+            },
+            {
+                "name": "Strings",
+                "scope": [
+                    "string",
+                    "string.quoted",
+                    "string.unquoted"
+                ],
+                "settings": {
+                    "foreground": "#FFA726",
+                    "fontStyle": "bold"
+                }
+            },
+            {
+                "name": "Types",
+                "scope": [
+                    "storage.type",
+                    "entity.name.type",
+                    "entity.name.class",
+                    "support.type",
+                    "entity.other.inherited-class"
+                ],
+                "settings": {
+                    "foreground": "#00ffe1",
+                    "fontStyle": "bold"
+                }
+            },
+            {
+                "name": "Preprocessor",
+                "scope": [
+                    "meta.preprocessor",
+                    "keyword.control.directive",
+                    "entity.name.function.preprocessor"
+                ],
+                "settings": {
+                    "foreground": "#EC407A",
+                    "fontStyle": "bold"
+                }
+            },
+            {
+                "name": "Built-ins",
+                "scope": [
+                    "support.function.builtin",
+                    "variable.language.builtin",
+                    "support.constant.builtin"
+                ],
+                "settings": {
+                    "foreground": "#26A69A",
+                    "fontStyle": "bold"
+                }
+            },
+            {
+                "name": "Documentation",
+                "scope": [
+                    "comment.block.documentation",
+                    "string.quoted.docstring"
+                ],
+                "settings": {
+                    "foreground": "#FFD54F",
+                    "fontStyle": "italic"
+                }
+            }
+        ]
+    },
+    // Dosya ve Otomatik Kaydetme
+    "files.autoSave": "afterDelay",
+    "files.autoSaveDelay": 1000,
+    // Terminal Ayarları
+    "terminal.integrated.fontSize": 12,
+    "terminal.integrated.fontFamily": "Hack",
+    "terminal.integrated.lineHeight": 1.6,
+    // Vim Entegrasyonu
+    "vim.useSystemClipboard": true,
+    "vim.handleKeys": {
+        "<C-c>": false,
+        "<C-v>": false,
+        "<C-a>": false
+    },
+    "vim.visualModeKeyBindingsNonRecursive": [
+        {
+            "before": [
+                "<C-a>"
+            ],
+            "commands": [
+                "editor.action.selectAll"
+            ]
+        }
+    ],
+    "vim.insertModeKeyBindingsNonRecursive": [
+        {
+            "before": [
+                "<C-v>"
+            ],
+            "commands": [
+                "editor.action.clipboardPasteAction"
+            ]
+        }
+    ],
+    "vim.normalModeKeyBindingsNonRecursive": [
+        {
+            "before": [
+                "<C-v>"
+            ],
+            "commands": [
+                "editor.action.clipboardPasteAction"
+            ]
+        }
+    ],
+    // Renk Özelleştirmeleri
+    "workbench.colorCustomizations": {
+        // "editor.background": "#0A0A12",
+        // "sideBar.background": "#101018",
+        // "activityBar.background": "#141420",
+        // "terminal.background": "#0A0A12",
+        "editor.lineHighlightBackground": "#1A1A2A80",
+        "editor.selectionBackground": "#584765",
+        "editorCursor.foreground": "#FFA726",
+        // "editor.foreground": "#E0E0E0",
+        "editorLineNumber.foreground": "#4A4A5A",
+        "editorLineNumber.activeForeground": "#FF7770",
+        "editorBracketMatch.background": "#2E4E3F40",
+        "editorBracketMatch.border": "#5A718455",
+        // "statusBar.background": "#06060C"
+    },
+    "window.customTitleBarVisibility": "windowed",
+}
