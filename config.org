@@ -41,7 +41,7 @@
        :desc "Toggle line highlight in frame" "h" #'hl-line-mode
        :desc "Toggle line highlight globally" "H" #'global-hl-line-mode
        :desc "Toggle line numbers"            "l" #'doom/toggle-line-numbers
-       :desc "Toggle markdown-view-mode"      "m" #'dt/toggle-markdown-view-mode
+       :desc "Toggle minimap"                 "m" #'minimap-mode
        :desc "Toggle truncate lines"          "t" #'toggle-truncate-lines
        :desc "Toggle treemacs"                "f" #'+treemacs/toggle
        :desc "Toggle vterm split"             "v" #'+vterm/toggle))
@@ -385,4 +385,21 @@
   (evil-mode 1)
   :config
   (setq doom-modeline-evil-state t))
+(beacon-mode 1)
+(setq beacon-blink-duration 0.3)
+
+(require 'minimap)
+
+;; Genişliği ve konumu ayarla
+(setq minimap-width-fraction 0.05) ;; daha ince bir görünüm
+(setq minimap-window-location 'right) ;; sağda göster
+(setq minimap-update-delay 0.1) ;; daha hızlı güncelleme
+(setq minimap-recenter-type 'relative) ;; imleç hareketine göre kaydırma
+
+;; Font ve renk
+(setq minimap-major-modes '(prog-mode text-mode)) ;; sadece kod veya text buffer’ları
+(setq minimap-minimum-width 20)
+(setq minimap-dedicated-window t) ;; sadece minimap penceresi için
+(minimap-mode 1)
+
 #+end_src
