@@ -1,0 +1,113 @@
+# Ghostty — GNOME Terminal görünümüne hizalı (FiraCode + palette)
+# Config: ~/.config/ghostty/config.ghostty
+# Reload: Ctrl+Shift+,
+
+# ── Shell ──────────────────────────────────────────────
+command = /usr/bin/zsh
+shell-integration = detect
+shell-integration-features = cursor,sudo,title
+
+# ── Font (GNOME Terminal: FiraCode Nerd Font 11) ───────
+font-family = FiraCode Nerd Font
+font-size = 11
+# Ligatür KAPALI: GNOME Terminal (VTE) ligatür çizmez; `->' `!=' ayrı harf kalsın.
+# Geri açmak için: font-feature = calt / font-feature = liga
+font-feature = -calt
+font-feature = -liga
+font-feature = -dlig
+font-thicken = false
+
+# ── Colors — "SENTINEL" taktik HUD (Palantir/Anduril esinli) ──
+# Karbon mavi-siyah zemin, çelik gri metin, amber imleç, cyan vurgu
+background = #0b0f14
+foreground = #c2ccd4
+cursor-color = #ffb000
+cursor-text = #0b0f14
+cursor-style = block
+cursor-style-blink = false
+selection-background = #0e3a46
+selection-foreground = #d6f7ff
+
+# 16-color palette — tactical
+palette = 0=#10161d
+palette = 1=#ff4a57
+palette = 2=#2bd98c
+palette = 3=#ffb000
+palette = 4=#3d9bd9
+palette = 5=#9b7dd9
+palette = 6=#19c6d1
+palette = 7=#aebbc4
+palette = 8=#4e5e6c
+palette = 9=#ff7080
+palette = 10=#55efa9
+palette = 11=#ffc94d
+palette = 12=#6fb9f2
+palette = 13=#be9df2
+palette = 14=#4fe0eb
+palette = 15=#e8f0f5
+
+# Split görünümü — odak dışı pane karartılır (komuta ekranı hissi)
+split-divider-color = #1c2a36
+unfocused-split-opacity = 0.82
+unfocused-split-fill = #0b0f14
+
+# Tam opak — GNOME'da blur yok, şeffaflık HUD netliğini bozar
+background-opacity = 1
+
+# ── Window / padding ───────────────────────────────────
+window-padding-x = 6
+window-padding-y = 2
+window-padding-balance = true
+window-padding-color = extend
+window-step-resize = true
+window-theme = ghostty
+gtk-single-instance = true
+confirm-close-surface = false
+
+# ── Üst bar (titlebar/tab) ince ────────────────────────
+# tabs: title + sekmeler tek satır (daha az yükseklik)
+gtk-titlebar = true
+gtk-titlebar-style = tabs
+gtk-tabs-location = top
+gtk-toolbar-style = flat
+gtk-wide-tabs = false
+# Maximize / fullscreen'de üst şerit kaybolsun (zen için)
+gtk-titlebar-hide-when-maximized = true
+# terminal bg ile aynı — kalın/ayrı şerit hissi azalır
+window-titlebar-background = #0b0f14
+window-titlebar-foreground = #7d8fa0
+gtk-custom-css = ~/.config/ghostty/thin-titlebar.css
+
+# ── Scroll / clipboard ─────────────────────────────────
+scrollback-limit = 10000000
+copy-on-select = clipboard
+clipboard-paste-protection = true
+mouse-hide-while-typing = true
+link-url = true
+
+# ── Cell tuning (tmux pane/status dikdörtgenleri sıkı) ─
+# Satır yüksekliği fontun doğal ölçüsü (≈18px @11pt) = GNOME Terminal ile aynı.
+# Eski sıkı hali: adjust-cell-height = -18% / adjust-cursor-height = -15%
+adjust-cell-height = 0
+adjust-cell-width = 0
+adjust-box-thickness = -1
+adjust-cursor-height = 0
+
+# ── Quality-of-life keybinds (GNOME-benzeri) ───────────
+# Ctrl+Shift+C/V zaten varsayılan
+keybind = ctrl+shift+t=new_tab
+keybind = ctrl+shift+w=close_surface
+keybind = ctrl+page_up=previous_tab
+keybind = ctrl+page_down=next_tab
+keybind = ctrl+shift+o=new_split:right
+keybind = ctrl+shift+e=new_split:down
+
+# Fullscreen / zen — Ghostty KENDİ fullscreen'i üst titlebar'ı gizler.
+# GNOME WM fullscreen (eski F11) bazen GTK headerbar'ı bırakıyordu.
+keybind = f11=unbind
+keybind = ctrl+shift+f11=toggle_fullscreen
+keybind = alt+enter=toggle_fullscreen
+# Tek pane zoom (split varken)
+keybind = ctrl+shift+enter=toggle_split_zoom
+# Maximize (kenarlık kalır; titlebar hide-when-maximized ile üst gider)
+keybind = ctrl+shift+f=toggle_maximize

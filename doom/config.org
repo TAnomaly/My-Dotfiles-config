@@ -1,0 +1,254 @@
+#+title: Config
+
+* Doom Settings
+#+begin_src emacs-lisp
+;; Tema: ~/.doom.d/themes/sentinel-theme.el (Ghostty SENTINEL paleti portu).
+;; personal.el de aynısını set eder; burada doom-one bırakmak lsp-ui-doc theme
+;; reload'unda temayı gömüyordu.  Eski Monokai: tugmonokai-theme.el (duruyor).
+(setq doom-theme 'sentinel)
+;; Font: ghostty ile aynı — FiraCode Nerd Font Regular 11pt (ghostty font-thicken=false).
+;; DİKKAT: aile adı fc-list çıktısıyla birebir olmalı; ":size 11.0" ondalık =
+;; punto (tam sayı piksel demek).
+(setq doom-font (font-spec :family "FiraCode Nerd Font" :size 11.0 :weight 'regular))
+(setq display-line-numbers-type t)
+#+end_src
+
+* Keybindings
+#+begin_src emacs-lisp
+(map! :leader
+      :desc "Comment line" "-" #'comment-line)
+
+(map! :leader
+      (:prefix ("t" . "toggle")
+       :desc "Toggle eshell"            "e" #'+eshell/toggle
+       :desc "Toggle line highlight"    "h" #'hl-line-mode
+       :desc "Toggle numbers"           "l" #'doom/toggle-line-numbers
+       :desc "Toggle truncate lines"    "t" #'toggle-truncate-lines
+       :desc "Toggle treemacs"          "f" #'+treemacs/toggle
+       :desc "Toggle vterm"             "v" #'+vterm/toggle))
+
+(map! :leader
+      (:prefix ("o" . "open here")
+       :desc "Open eshell here" "e" #'+eshell/here
+       :desc "Open vterm here"  "v" #'+vterm/here))
+#+end_src
+
+* Sensible Defaults
+#+begin_src emacs-lisp
+(setq confirm-kill-emacs nil)
+(setq initial-buffer-choice 'eshell)
+#+end_src
+
+* Centaur Tabs — ince, radiuslu sekmeler
+#+begin_src emacs-lisp
+;; İnce + radiuslu + monokai koyu (beyaz bg fix).
+;; Face'ler top-level: tema reload'da da kalır.
+(custom-set-faces!
+  '(centaur-tabs-default :background "#181915" :foreground "#181915")
+  '(centaur-tabs-unselected :background "#181915" :foreground "#75715e" :height 0.9)
+  '(centaur-tabs-selected :background "#333333" :foreground "#f8f8f2" :weight bold :height 0.9)
+  '(centaur-tabs-unselected-modified :background "#181915" :foreground "#fd971f" :height 0.9)
+  '(centaur-tabs-selected-modified :background "#333333" :foreground "#fd971f" :weight bold :height 0.9)
+  '(centaur-tabs-active-bar-face :background "#fd971f")
+  '(header-line :background "#181915" :foreground "#75715e" :box nil :underline nil :overline nil)
+  '(tab-line :background "#181915" :foreground "#75715e" :box nil :underline nil :overline nil :height 0.9))
+
+(after! centaur-tabs
+  (setq centaur-tabs-style "rounded"          ; GUI: yuvarlak kenar
+        centaur-tabs-height 16                ; ince
+        centaur-tabs-set-bar 'under            ; aktif: turuncu alt çizgi
+        centaur-tabs-set-icons nil
+        centaur-tabs-set-close-button nil      ; x yok → sade
+        centaur-tabs-set-modified-marker t
+        centaur-tabs-modified-marker "·"
+        centaur-tabs-cycle-scope 'tabs
+        centaur-tabs-label-fixed-length 12
+        centaur-tabs-buffer-groups-function #'centaur-tabs-projectile-buffer-groups)
+  (unless (display-graphic-p)
+    (setq centaur-tabs-style "bar"            ; TTY: XPM radius yok
+          centaur-tabs-height 14
+          centaur-tabs-modified-marker "*"))
+  (centaur-tabs-headline-match)               ; boş alan da koyu
+  (map! :n "g t" #'centaur-tabs-forward
+        :n "g T" #'centaur-tabs-backward
+        ;; Sekmeyi kapat (buffer kill) — vim :bd / :tabclose
+        :n "g c" #'kill-current-buffer
+        :n "g C" #'centaur-tabs-kill-all-buffers-in-current-group)
+  (map! :leader
+        :desc "Next tab"     "]" #'centaur-tabs-forward
+        :desc "Previous tab" "[" #'centaur-tabs-backward)
+  ;; SPC b c = close tab (SPC b d / SPC b k zaten kill-buffer)
+  (map! :leader
+        (:prefix "b"
+         :desc "Close tab (kill buffer)" "c" #'kill-current-buffer)))
+#+end_src
+
+* C/C++ Development Setup
+#+begin_src emacs-lisp
+(use-package! lsp-mode
+  :hook ((c-mode c++-mode c-ts-mode c++-ts-mode) . lsp-deferred)
+  :custom
+  (lsp-clients-clangd-args
+   '("--clang-tidy"
+     "--completion-style=detailed"
+     "--header-insertion=iwyu"
+     "--inlay-hints"
+     "--function-arg-placeholders=0"
+     "--log=error"))
+  (lsp-enable-symbol-highlighting t)
+  ;; Semantic tokens KAPALI: clangd token'ları treesit level-4'ün üstüne
+  ;; lsp-face-semhl-* ile tekrar boyuyordu (operator yeşil, member beyaz vb.) =>
+  ;; LSP açılınca renkler kayıyordu.  Tek highlighter treesit kalsın = nvim ile
+  ;; birebir, renk sabit.  Diğer LSP özellikleri (hover/def/diag/inlay) etkilenmez.
+  (lsp-semantic-tokens-enable nil)
+  (lsp-inlay-hint-enable t)
+  :config
+  (setq lsp-signature-auto-activate t
+        lsp-signature-render-documentation t
+        lsp-eldoc-render-all t)
+  (add-hook 'lsp-mode-hook 'lsp-ui-mode))
+
+(after! lsp-inlay-hints
+  (setq lsp-inlay-hints-mode t)
+  (custom-set-faces
+   '(lsp-inlay-hint-face
+     ((t (:foreground "#727072" :background "#2D2A2E" :slant italic :height 0.9))))))
+
+(after! lsp-ui
+  (setq lsp-ui-sideline-enable t
+        lsp-ui-sideline-show-hover t
+        lsp-ui-sideline-show-code-actions t
+        lsp-ui-sideline-show-diagnostics t
+        lsp-ui-sideline-show-symbol t
+        lsp-ui-doc-enable t
+        lsp-ui-doc-show-with-cursor t
+        lsp-ui-doc-delay 0.15
+        lsp-ui-doc-position 'top)
+  (custom-set-faces
+   '(lsp-ui-doc-background ((t (:background "#2D2A2E"))))
+   '(lsp-ui-doc-header ((t (:foreground "#FF6188" :weight bold))))))
+
+(after! treesit
+  (setq treesit-font-lock-level 4
+        treesit-auto-install-grammar 'always)
+  (dolist (dir (list (expand-file-name "tree-sitter" doom-emacs-dir)
+                     (expand-file-name ".local/etc/tree-sitter" doom-emacs-dir)
+                     (expand-file-name "tree-sitter" user-emacs-directory)))
+    (when (file-directory-p dir)
+      (add-to-list 'treesit-extra-load-path dir))))
+
+;; C/C++: cc +tree-sitter modülü remap yapar.
+;; ESKİ HATA: .cpp c-ts-mode'a (C grammar) bağlıydı => renklendirme bozuk.
+(use-package! c-ts-mode
+  :defer t
+  :config (setq c-ts-mode-indent-offset 2))
+
+(use-package! c++-ts-mode
+  :defer t
+  :config (setq c-ts-mode-indent-offset 2))
+
+(dolist (pair '(("\\.hpp\\'" . c++-mode)
+                ("\\.hh\\'"  . c++-mode)
+                ("\\.hxx\\'" . c++-mode)
+                ("\\.cc\\'"  . c++-mode)
+                ("\\.cxx\\'" . c++-mode)
+                ("\\.c\\+\\+\\'" . c++-mode)))
+  (add-to-list 'auto-mode-alist pair))
+
+;; clang-format binary yolu (format-on-save artık apheleia / :editor format +onsave)
+(use-package! clang-format
+  :defer t
+  :init
+  (setq clang-format-executable
+        (or (executable-find "clang-format")
+            (executable-find "clang-format-18")
+            (expand-file-name "~/.local/bin/clang-format"))))
+#+end_src
+
+* Theme Colors (temaya tasindi — sadece LSP inlay hint)
+#+begin_src emacs-lisp
+;; Syntax renkleri artık tugmonokai temasında (themes/tugmonokai-theme.el) ve
+;; personal.el'deki custom-set-faces! bloğunda yaşıyor.  Burada ikinci bir
+;; kopya tutmak nvim'le çelişen değerler biriktiriyordu (variable turuncu/beyaz,
+;; region #444/#49483e, MatchParen sarı/turuncu, constant-type takası) —
+;; o yüzden blok kaldırıldı.  Tek kalan: LSP inlay hint (temada karşılığı yok).
+(custom-set-faces
+ '(lsp-inlay-hint-face ((t (:foreground "#727072" :background "#1E1F1C" :slant italic :height 0.9)))))
+#+end_src
+
+* Doom Modeline — Classic Colorful Version
+#+begin_src emacs-lisp
+(use-package! doom-modeline
+  :hook (after-init . doom-modeline-mode)
+  :init
+  (setq doom-modeline-height 25)
+  (setq doom-modeline-bar-width 4)
+  (setq doom-modeline-icon t)
+  (setq doom-modeline-major-mode-icon t)
+  (setq doom-modeline-buffer-file-name-style 'truncate-upto-project)
+  (setq doom-modeline-line-number t)
+  (setq doom-modeline-major-mode-color-icon t)
+  (setq doom-modeline-vcs-max-length 20)
+  (setq doom-modeline-enable-word-count t)
+  (setq doom-modeline-buffer-encoding t)
+  ;;(setq doom-modeline-minor-modes t)
+  ;;(setq doom-modeline-indent-info t)
+  ;;(setq doom-modeline-persp-name t)
+  ;; Git diff ve branch
+  (setq doom-modeline-git-diff t)
+  (setq doom-modeline-git-command "git diff --numstat")
+  (setq doom-modeline-github t)
+  ;; Saat ve zaman
+  (setq doom-modeline-time t)
+  (setq display-time-format "%H:%M %d-%m-%Y"))
+
+(custom-set-faces
+ '(doom-modeline-bar ((t (:background "#FFA500"))))
+ '(doom-modeline-buffer-file ((t (:foreground "#FFFFFF" :weight bold))))
+ '(doom-modeline-buffer-modified ((t (:foreground "#EF5350" :weight bold))))
+ '(doom-modeline-buffer-major-mode ((t (:foreground "#42A5F5" :weight bold))))
+ '(doom-modeline-evil-normal-state ((t (:background "#4CAF50" :foreground "#000000" :weight bold))))
+ '(doom-modeline-evil-insert-state ((t (:background "#2196F3" :foreground "#FFFFFF" :weight bold))))
+ '(doom-modeline-evil-visual-state ((t (:background "#FFC107" :foreground "#000000" :weight bold))))
+ '(doom-modeline-evil-replace-state ((t (:background "#F44336" :foreground "#FFFFFF" :weight bold))))
+ '(doom-modeline-git-added ((t (:foreground "#66BB6A"))))
+ '(doom-modeline-git-removed ((t (:foreground "#EF5350"))))
+ '(doom-modeline-git-modified ((t (:foreground "#FFC107")))))
+
+(use-package! evil
+  :init
+  (evil-mode 1)
+  :config
+  (setq doom-modeline-evil-state t))
+(beacon-mode 1)
+(setq beacon-blink-duration 0.3)
+#+end_src
+
+* Treemacs — Monokai Style with Icons
+#+begin_src emacs-lisp
+(use-package! treemacs
+  :defer t
+  :config
+  (setq treemacs-width 35
+        treemacs-is-never-other-window t
+        treemacs-collapse-dirs (if treemacs-python-executable 3 0)
+        treemacs-silent-filewatch t
+        treemacs-silent-refresh t
+        treemacs-show-hidden-files t
+        treemacs-no-png-images t   ;; nerd-icons: png yerine font ikon kullan
+        treemacs-follow-mode t
+        treemacs-file-event-delay 2000)
+  (treemacs-follow-mode t)
+  (treemacs-filewatch-mode t))
+
+;; NOTE: treemacs ikon temasi (nerd-icons), dirvish, dired ikonlari ve
+;; treemacs/dired Monokai renkleri personal.el'e tasindi.  Orada custom-set-faces!
+;; (bang) ile tanimli => lsp-ui-doc theme reload'da geri donmez (bang'siz surum
+;; burada geri donuyordu, treemacs renkleri config ile uyusmuyordu).
+#+end_src
+
+* Personal overrides
+All personal tweaks (theme, claude/opencode, transparency, keymaps) live in =personal.el=, loaded LAST so they survive re-tangles.
+#+begin_src emacs-lisp
+(load! "personal")
+#+end_src
