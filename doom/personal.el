@@ -5,11 +5,12 @@
 ;; edited, like packages.el).  Loading last also overrides a stale config.el.
 
 ;;; --- Theme -----------------------------------------------------------------
-;; tugmonokai (~/.doom.d/themes/tugmonokai-theme.el = nvim colors/tugmonokai.lua
-;; portu) is the BASE theme.  It must be `doom-theme' so any theme reload —
+;; gits (~/.doom.d/themes/gits-theme.el = Ghost in the Shell paleti, tugmonokai
+;; yapısı) is the BASE theme.  It must be `doom-theme' so any theme reload —
 ;; notably the lsp-ui-doc child frame — reloads it instead of burying it under
-;; doom-one.  Önceki SENTINEL görünümü: personal.el.sentinel.bak + sentinel-theme.el.
-(setq doom-theme 'tugmonokai)
+;; doom-one.  Önceki Monokai görünümü: ~/.local/share/gits-theme/revert.sh
+;; (tugmonokai-theme.el duruyor).  SENTINEL: personal.el.sentinel.bak.
+(setq doom-theme 'gits)
 
 ;;; --- Font: nvim/alacritty eşleşmesi ------------------------------------------
 ;; Alacritty (nvim'in gördüğü): FiraCode Nerd Font SemBd, 11pt.  Buradaki aile
@@ -496,7 +497,22 @@
 ;; oraya terminal açılamıyordu.  `SPC t v' (+vterm/toggle) ayrı adlı buffer
 ;; kullanır (*doom:vterm-popup:*), o alttan açılıp kapanmaya devam eder.
 (after! vterm
-  (set-popup-rule! "^\\*vterm" :ignore t))
+  (set-popup-rule! "^\\*vterm" :ignore t)
+  ;; TUI uygulamalarında copy/paste: terminalin kendi clipboard'ını kullan
+  ;; Emacs müdahalesi OLMAZ → Ctrl+Shift+C/V Ghostty'ye gider
+  (setq vterm-copy-exclude-prompt t
+        vterm-max-scrollback 100000)
+  ;; Mouse seçimi terminal programına GİTSİN (Emacs'e almıyoruz)
+  (add-hook 'vterm-mode-hook
+            (lambda ()
+              ;; TUI'ler kendi seçimini yapsın, Emacs mouse'ı）
+              (setq-local mouse-yank-at-point t)))
+  ;; vterm'de Emacs剪贴板介入lerini DEVRE DIŞI bırak
+  ;; Böylece Ctrl+Shift+C/V → Ghostty terminal clipboard → TUI uygulaması
+  (map! :map vterm-mode-map
+        ;; Bu tuşları Emacs'e DEĞIL, terminale ilet
+        "C-S-c" nil
+        "C-S-v" nil))
 
 ;;; --- AI CLIs in eat (claude / opencode) ------------------------------------
 ;; eat yerine vterm kullaniyorduk; vterm tam-ekran TUI'de yukari/asagi kaydirmayi
@@ -515,19 +531,28 @@
   (when (and bin (file-directory-p bin))
     (add-to-list 'exec-path bin)
     (setenv "PATH" (concat bin path-separator (getenv "PATH")))))
+;; opencode CLI'ı ~/.opencode/bin altında; daemon PATH'i kaynaklamadığından
+;; burada da eklememiz gerekiyor.
+(let ((opencode-bin (expand-file-name "~/.opencode/bin")))
+  (when (file-directory-p opencode-bin)
+    (add-to-list 'exec-path opencode-bin)
+    (setenv "PATH" (concat opencode-bin path-separator (getenv "PATH")))))
 
 (after! eat
   (setq eat-kill-buffer-on-exit t          ; komut cikinca buffer'i temizle
         eat-term-scrollback-size 400000    ; bol scrollback
         eat-enable-yank-to-terminal t      ; terminal programi kill-ring'i OKUYABILIR (OSC 52 izni; keybinding DEGIL)
-        eat-enable-kill-from-terminal t)   ; terminalde secilen kill-ring'e (xclip => panoya) gider
-  ;; eat buffer'inda evil'i KAPAT (emacs state): ESC evil-normal'a dusmesin, dogrudan
-  ;; claude'a gitsin.  `<N>' modu bu yuzden aciliyordu.
+        eat-enable-kill-from-terminal t    ; terminalde secilen kill-ring'e gider
+        eat-term-fast-prefix-prefix t)     ; hizli terminal cikti isleme
+  ;; eat buffer'inda evil'i KAPAT (emacs state)
   (evil-set-initial-state 'eat-mode 'emacs)
-  ;; Yapistirma: eat'te paste = `eat-yank'; varsayilan tuslar C-y / S-insert /
-  ;; M-y.  Terminal aliskanligi Ctrl+Shift+V bagli DEGILDI, orta tik da ham
-  ;; event olarak terminale gidiyor => claude'a "yapistiramiyorum" bunun sonucuydu.
-  (define-key eat-semi-char-mode-map (kbd "C-S-v") #'eat-yank))
+  ;; TERM: eat-truecolor'i programlar tanimaz → xterm-256color
+  (setq eat-term-name "xterm-256color")
+  ;; Paste: eat'in kendi yank'i (bracketed paste modu ile TUI uyumlu)
+  (define-key eat-semi-char-mode-map (kbd "C-S-v") #'eat-yank)
+  ;; :q ile çıkış
+  (evil-define-key 'normal eat-mode-map
+    (kbd ":q") (lambda () (interactive) (kill-buffer-and-window))))
 
 (defun my/eat-cli (bufname cmd &rest args)
   "Pop to an eat terminal BUFNAME running CMD with ARGS; reuse the buffer if it exists.
@@ -562,11 +587,17 @@ bazen kod penceresini yeniden kullanıp aynı kodu ikinci kez gösteriyordu."
   (interactive)
   (my/eat-cli "*opencode*" "opencode"))
 
+(defun codex ()
+  "Open OpenAI Codex in an eat terminal."
+  (interactive)
+  (my/eat-cli "*codex*" "codex"))
+
 ;; Vim alışkanlığı `:claude` M-x'e DÜŞMEZ — evil ex komutları ayrı tabloda
 ;; yaşar ("Unknown command" sebebi buydu).  İkisi de çalışsın.
 (after! evil
   (evil-ex-define-cmd "claude"   #'claude)
-  (evil-ex-define-cmd "opencode" #'opencode))
+  (evil-ex-define-cmd "opencode" #'opencode)
+  (evil-ex-define-cmd "codex"    #'codex))
 
 ;;; --- TUI: clipboard + mouse --------------------------------------------------
 ;; gnome-terminal hissi: evil yank/delete doğrudan X panosuna, `p`/C-y panodan
@@ -609,7 +640,7 @@ bazen kod penceresini yeniden kullanıp aynı kodu ikinci kez gösteriyordu."
     (propertize
      (if (char-displayable-p ?↕) " ↕ " " = ")
      'help-echo "Sürükle: pencere yüksekliğini değiştir (yatay split)\nDikey split için pencereler arasındaki | çizgisini sürükle"
-     'face '(:foreground "#fd971f" :weight bold)
+     'face '(:foreground "#00f0e0" :weight bold)
      'mouse-face 'mode-line-highlight
      'local-map (let ((map (make-sparse-keymap)))
                   (define-key map [mode-line down-mouse-1] #'mouse-drag-mode-line)
@@ -679,7 +710,7 @@ bazen kod penceresini yeniden kullanıp aynı kodu ikinci kez gösteriyordu."
     (evil-terminal-cursor-changer-activate)))
 
 (defun my/tty-cursor-color ()
-  (send-string-to-terminal "\e]12;#fd971f\a"))
+  (send-string-to-terminal "\e]12;#00f0e0\a"))
 (add-hook 'tty-setup-hook #'my/tty-cursor-color 90)
 (add-hook 'kill-emacs-hook
           (lambda ()
@@ -695,6 +726,21 @@ bazen kod penceresini yeniden kullanıp aynı kodu ikinci kez gösteriyordu."
 ;; TTY'de etkisiz.  Gerçek tam ekran (başlık çubuksuz) hâlâ F11.
 (add-to-list 'initial-frame-alist '(fullscreen . maximized))
 (add-to-list 'default-frame-alist '(fullscreen . maximized))
+
+;;; --- GUI: frameless window with comfortable inner spacing ------------------
+(defun my/apply-gui-window-style (&optional frame)
+  "Hide decorations and add 12px padding to top-level graphical FRAME."
+  (let ((frame (or frame (selected-frame))))
+    (when (and (display-graphic-p frame)
+               (not (frame-parent frame))
+               (not (eq (frame-parameter frame 'minibuffer) 'only)))
+      (modify-frame-parameters frame
+                               '((undecorated . t)
+                                 (internal-border-width . 12))))))
+(add-hook 'after-make-frame-functions #'my/apply-gui-window-style)
+(add-hook 'window-setup-hook #'my/apply-gui-window-style)
+(dolist (frame (frame-list))
+  (my/apply-gui-window-style frame))
 
 ;;; --- Background transparency (GTK/X11 daemon) ------------------------------
 ;; ARGB visual is chosen at frame creation, so the value must live in
@@ -716,10 +762,12 @@ bazen kod penceresini yeniden kullanıp aynı kodu ikinci kez gösteriyordu."
 (map! :leader
       (:prefix ("t" . "toggle")
        :desc "Toggle transparency" "T" #'my/toggle-transparency
+       :desc "Clear syntax glow borders" "g" #'my/toggle-syntax-glow
        ;; explorer = dirvish yan panel (config.el'de treemacs'ti; o hâlâ SPC o p)
        :desc "Toggle explorer (dirvish)" "f" #'dirvish-side)
       (:prefix ("o" . "open here")
        :desc "opencode (eat)"       "i" #'opencode
+       :desc "Codex (eat)"          "x" #'codex
        :desc "Dirvish (fullscreen)" "d" #'dirvish
        :desc "Dirvish sidebar"      "D" #'dirvish-side)
       (:prefix "c"
@@ -803,12 +851,25 @@ bazen kod penceresini yeniden kullanıp aynı kodu ikinci kez gösteriyordu."
 
 ;; 2) Statusline — doom-modeline `main' lualine düzeninde:
 ;;    [mod] branch +N ~N -N  ⚠  │ dosya ●   …   ft  satır:sütun %  saat  ↕
+;;    İnce + flat (radius face ile yok; çalışma alanı sekmeleri native üst şeritte).
+(defun my/slim-modeline-faces (&rest _)
+  "Statusline'ı küçült + flat tut; tema reload'da (lsp-ui doc) yeniden uygula."
+  (dolist (f '(mode-line mode-line-active mode-line-inactive))
+    (when (facep f)
+      (set-face-attribute f nil :box nil :height 0.9))))
+(my/slim-modeline-faces)
+(add-hook 'doom-load-theme-hook #'my/slim-modeline-faces 95)
 (after! doom-modeline
-  (setq doom-modeline-buffer-encoding nil
+  (setq doom-modeline-height 20
+        doom-modeline-bar-width 2
+        doom-modeline-window-width-limit 100
+        doom-modeline-buffer-encoding nil
         doom-modeline-enable-word-count nil
         doom-modeline-buffer-file-name-style 'relative-to-project
         doom-modeline-vcs-max-length 24
         doom-modeline-time-icon nil)
+  ;; Eski XPM bar cache'ini at; yeni yükseklik/genişlikte yeniden çiz.
+  (doom-modeline-refresh-bars)
   ;; Doom size-indication'ı init sonunda açar → en sona bizim -1 (matches segmenti "9.8k" basıyordu)
   (add-hook 'doom-after-init-hook (lambda () (size-indication-mode -1)) 100)
   ;; gitsigns/lualine "diff": diff-hl overlay'lerini say (ucuz, her redisplay'de OK)
@@ -823,17 +884,18 @@ bazen kod penceresini yeniden kullanıp aynı kodu ikinci kez gösteriyordu."
             ('delete (cl-incf del))))
         (when (> (+ add chg del) 0)
           (concat " "
-                  (and (> add 0) (propertize (format "+%d " add) 'face '(:foreground "#a6e22e" :weight bold)))
-                  (and (> chg 0) (propertize (format "~%d " chg) 'face '(:foreground "#fd971f" :weight bold)))
-                  (and (> del 0) (propertize (format "-%d " del) 'face '(:foreground "#f92672" :weight bold))))))))
+                  (and (> add 0) (propertize (format "+%d " add) 'face '(:foreground "#00ff9f" :weight bold)))
+                  (and (> chg 0) (propertize (format "~%d " chg) 'face '(:foreground "#ff7a00" :weight bold)))
+                  (and (> del 0) (propertize (format "-%d " del) 'face '(:foreground "#ff2b2b" :weight bold))))))))
+  ;; Tab-bar (çalışma alanı) sekmeleri: statusline'da değil — native üst şerit (§6).
   (doom-modeline-def-modeline 'main
     '(eldoc bar window-number modals matches follow vcs git-diff check buffer-info remote-host selection-info)
     '(compilation objed-state misc-info persp-name grip debug repl lsp process major-mode buffer-position time resize-grip)))
 
-;; 3) Transparanlık (TTY) — t: arka planı terminale bırak (ghostty #0b0f14,
+;; 3) Transparanlık (TTY) — t: arka planı terminale bırak (ghostty bg #081014,
 ;;    `background-opacity' düşürülürse cam efekti).  nil: opak `my/tty-bg'
-;;    (ghostty zemininden yumuşak).  SPC t T: `my/toggle-transparency'.
-(defvar my/tty-bg "#1e1f1c" "TTY opak zemin; tugmonokai-theme `bg' ile aynı olmalı.")
+;;    (ghostty bg #081014 ile birebir).  SPC t T: `my/toggle-transparency'.
+(defvar my/tty-bg "#081014" "TTY opak zemin; ghostty `background' (#081014) ve gits-theme `bg' ile aynı olmalı.")
 (defvar my/tty-transparent nil "TTY'de Emacs arka planı terminalden mi devralınsın.")
 (defun my/tty-transparent-faces (&rest _)
   "TTY: `my/tty-transparent' ise ilgili face'lerin arka planını terminale bırak."
@@ -856,6 +918,42 @@ bazen kod penceresini yeniden kullanıp aynı kodu ikinci kez gösteriyordu."
     (my/tty-transparent-faces)
     (message "TTY transparency: %s" (if my/tty-transparent "on" "off"))))
 
+;; 3b) Keep the neon syntax colors configured below, without literal `:box'
+;; borders.  Font-lock faces are shared by code, dashboard and recent-file
+;; lists, so boxing them also draws borders in those unrelated views.
+(defvar my/syntax-glow-faces
+  '(font-lock-keyword-face font-lock-operator-face font-lock-preprocessor-face
+    font-lock-function-name-face font-lock-function-call-face
+    font-lock-type-face font-lock-type-definition-face font-lock-builtin-face
+    font-lock-string-face font-lock-constant-face font-lock-number-face
+    font-lock-variable-name-face font-lock-property-name-face)
+  "Syntax faces whose box borders should stay disabled.")
+
+(defun my/clear-syntax-glow (&optional frame)
+  "Remove box borders from syntax faces, optionally only on FRAME."
+  (dolist (fr (frame-list))
+    (when (or (null frame) (eq fr frame))
+      (dolist (face my/syntax-glow-faces)
+        (when (facep face)
+          (set-face-attribute face fr :box nil))))))
+
+;; Keep the old command name safe for existing keymaps and sessions.  Neon
+;; foreground colors stay enabled; this command only clears literal borders.
+(defun my/toggle-syntax-glow (&optional frame)
+  (interactive)
+  (my/clear-syntax-glow frame)
+  (message "Neon syntax colors on; box borders cleared"))
+
+(defun my/apply-syntax-glow (&optional frame)
+  "Compatibility entry point: retain neon colors and clear glow boxes."
+  (my/clear-syntax-glow frame))
+
+(remove-hook 'doom-load-theme-hook #'my/apply-syntax-glow)
+(remove-hook 'after-make-frame-functions #'my/apply-syntax-glow)
+(add-hook 'doom-load-theme-hook #'my/clear-syntax-glow 95)
+(add-hook 'after-make-frame-functions #'my/clear-syntax-glow)
+
+
 ;; 4) Gutter + numaralar — gitsigns: sol margin'de ▎ (TTY'de fringe yok);
 ;;    nvim `number relativenumber'.
 (setq display-line-numbers-type 'relative)
@@ -867,9 +965,9 @@ bazen kod penceresini yeniden kullanıp aynı kodu ikinci kez gösteriyordu."
             '((insert . "▎") (delete . "▁") (change . "▎")
               (unknown . "▎") (ignored . " ") (reference . " "))
             diff-hl-margin-spec-cache nil)  ; setq :set'i atlar → cache sıfırla
-      (set-face-attribute 'diff-hl-margin-insert nil :foreground "#a6e22e" :background 'unspecified :inherit nil)
-      (set-face-attribute 'diff-hl-margin-change nil :foreground "#fd971f" :background 'unspecified :inherit nil)
-      (set-face-attribute 'diff-hl-margin-delete nil :foreground "#f92672" :background 'unspecified :inherit nil)
+      (set-face-attribute 'diff-hl-margin-insert nil :foreground "#00ff9f" :background 'unspecified :inherit nil)
+      (set-face-attribute 'diff-hl-margin-change nil :foreground "#ff7a00" :background 'unspecified :inherit nil)
+      (set-face-attribute 'diff-hl-margin-delete nil :foreground "#ff2b2b" :background 'unspecified :inherit nil)
       (diff-hl-margin-mode 1))))
 (add-hook 'tty-setup-hook #'my/tty-diff-hl-margin)
 
@@ -880,15 +978,45 @@ bazen kod penceresini yeniden kullanıp aynı kodu ikinci kez gösteriyordu."
       (setq standard-display-table (make-display-table)))
     (set-display-table-slot standard-display-table 'vertical-border
                             (make-glyph-code ?│ 'vertical-border))
-    (set-face-attribute 'vertical-border nil :foreground "#49483e" :background 'unspecified)))
+    ;; Kırpılan satır sonundaki `$' ve sarılan satırdaki `\' işaretini gizle
+    ;; (nvim nowrap gibi: sağ kenarda işaret yok).
+    (set-display-table-slot standard-display-table 'truncation (make-glyph-code ?\s))
+    (set-display-table-slot standard-display-table 'wrap (make-glyph-code ?\s))
+    (set-face-attribute 'vertical-border nil :foreground "#344242" :background 'unspecified)))
 (add-hook 'tty-setup-hook #'my/tty-borders)
 
 ;; 6) Sekmeler — bufferline: nerd ikon + ● modified, "+" düğmesi yok.
+;;    Çalışma alanı (workflow): native üst şerit (tab-bar-show t).
+;;    Kod/buffer sekmeleri: editörün üstünde ayrı çubuk (tab-line, §6b).
+(require 'tab-bar)
+(tab-bar-mode 1)
+(customize-set-variable 'tab-bar-show t) ; :set → tab-bar--update-tab-bar-lines → üst şerit görünür
+
+;; 6b) Buffer/kod sekmeleri editörün üstündeki ayrı tab-line çubuğunda.
+(defun my/ctab-setup ()
+  "Show buffer tabs above the editor, separate from the status line."
+  ;; Remove the previous status-line injection in an already running session.
+  (advice-remove 'doom-modeline-set-main-modeline #'my/ctab-inject-mode-line)
+  (advice-remove 'doom-modeline-set-modeline #'my/ctab-inject-mode-line)
+  (let ((segment '(:eval (my/ctab-ml))))
+    (setq-default mode-line-format
+                  (remove segment (default-value 'mode-line-format)))
+    (dolist (buffer (buffer-list))
+      (with-current-buffer buffer
+        (when (and (local-variable-p 'mode-line-format)
+                   (listp mode-line-format))
+          (setq mode-line-format (remove segment mode-line-format))))))
+  (when (bound-and-true-p centaur-tabs-mode)
+    (centaur-tabs-mode -1))
+  (setq centaur-tabs-display-line-format 'tab-line-format)
+  (centaur-tabs-mode 1)
+  (force-mode-line-update t))
 (after! centaur-tabs
   (setq centaur-tabs-set-icons t
         centaur-tabs-icon-type 'nerd-icons
         centaur-tabs-show-new-tab-button nil
-        centaur-tabs-modified-marker "●"))
+        centaur-tabs-modified-marker "●")
+  (my/ctab-setup))
 
 ;; 7) Dashboard — snacks dashboard: amber EMACS banner + tek tuş menü.
 (when (modulep! :ui doom-dashboard)
@@ -908,7 +1036,7 @@ bazen kod penceresini yeniden kullanıp aynı kodu ikinci kez gösteriyordu."
                     "╚══════╝╚═╝     ╚═╝╚═╝  ╚═╝ ╚═════╝╚══════╝")))
       (dolist (line banner)
         (insert (+doom-dashboard--center +doom-dashboard--width
-                                         (propertize line 'face '(:foreground "#fd971f" :weight bold)))
+                                         (propertize line 'face '(:foreground "#00f0e0" :weight bold)))
                 "\n"))))
   (setq +doom-dashboard-ascii-banner-fn #'my/dashboard-banner)
   (setq +doom-dashboard-menu-sections
@@ -943,64 +1071,154 @@ bazen kod penceresini yeniden kullanıp aynı kodu ikinci kez gösteriyordu."
 ;; custom-set-faces! (bang) re-applies on `doom-load-theme-hook', so LSP /
 ;; semantic-tokens / theme reloads never revert these to the base theme.
 (custom-set-faces!
- '(default :background "#1e1f1c" :foreground "#f8f8f2")
+ '(default :background "#081014" :foreground "#c8e6e6") ; ghostty config.ghostty background
+ ;; These dashboard faces inherit syntax faces; keep the coding-mode glow
+ ;; boxes from leaking onto the startup menu and Restore session entry.
+ '(doom-dashboard-menu-title :inherit font-lock-function-name-face :box nil)
+ '(doom-dashboard-menu-desc :inherit font-lock-string-face :box nil)
  ;; nvim tugmonokai Bold Edition — treesit level-4 yüzleri
- '(font-lock-keyword-face :foreground "#F92672" :weight bold)
- '(font-lock-function-name-face :foreground "#A6E22E" :weight bold)
- '(font-lock-function-call-face :foreground "#A6E22E" :weight bold)
- ;; param/def/member → turuncu; kullanım → şeftali (krem #F8F8F2 beyaz duruyordu)
- '(font-lock-variable-name-face :foreground "#FD971F" :weight bold)
- '(font-lock-variable-use-face  :foreground "#FDB462" :weight bold)
- '(font-lock-property-name-face :foreground "#FD971F" :weight bold)
- '(font-lock-property-use-face  :foreground "#FD971F" :weight bold)
- '(font-lock-constant-face :foreground "#AE81FF" :weight bold)
- '(font-lock-number-face   :foreground "#AE81FF" :weight bold)
- '(font-lock-type-face :foreground "#66D9EF" :slant italic :weight bold)
- '(font-lock-builtin-face :foreground "#66D9EF" :weight bold)
- '(font-lock-string-face :foreground "#E6DB74" :weight bold)
- '(font-lock-comment-face :foreground "#75715E" :slant italic :weight bold)
- '(font-lock-operator-face :foreground "#F92672" :weight bold)
- '(font-lock-preprocessor-face :foreground "#F92672" :slant italic :weight bold)
- '(font-lock-escape-face :foreground "#FD971F" :weight bold)
- '(font-lock-delimiter-face :foreground "#8F8F8F" :weight bold)
- '(font-lock-bracket-face :foreground "#8F8F8F" :weight bold)
- '(font-lock-punctuation-face :foreground "#8F8F8F" :weight bold)
- '(font-lock-misc-punctuation-face :foreground "#FD971F" :weight bold)
- '(hl-line :background "#2a2a2a")
- '(cursor :background "#fd971f")
- '(region :background "#49483e")
- '(line-number :foreground "#7e57c2" :weight bold) ; diğer satırlar tok mor, bold (ince görünüyordu)
- '(line-number-current-line :foreground "#fd971f" :weight bold)
- '(show-paren-match :foreground "#fd971f" :background "#333333" :weight bold)
- '(lsp-inlay-hint-face :foreground "#75715e" :background "#1e1f1c" :slant italic :height 0.9)
+ '(font-lock-keyword-face :foreground "#ff2b2b" :weight bold)
+ '(font-lock-function-name-face :foreground "#00ff9f" :weight bold)
+ '(font-lock-function-call-face :foreground "#00ff9f" :weight bold)
+ ;; param/def/member → turuncu; kullanım → şeftali (krem #c8e6e6 beyaz duruyordu)
+ '(font-lock-variable-name-face :foreground "#ff7a00" :weight bold)
+ '(font-lock-variable-use-face  :foreground "#ffcc33" :weight bold)
+ '(font-lock-property-name-face :foreground "#ff7a00" :weight bold)
+ '(font-lock-property-use-face  :foreground "#ff7a00" :weight bold)
+ '(font-lock-constant-face :foreground "#c07dff" :weight bold)
+ '(font-lock-number-face   :foreground "#c07dff" :weight bold)
+ '(font-lock-type-face :foreground "#00d4ff" :slant italic :weight bold)
+ '(font-lock-builtin-face :foreground "#00d4ff" :weight bold)
+ '(font-lock-string-face :foreground "#ff4df0" :weight bold)
+ '(font-lock-comment-face :foreground "#e8f2f2" :slant italic :weight bold)
+ '(font-lock-operator-face :foreground "#ff2b2b" :weight bold)
+ '(font-lock-preprocessor-face :foreground "#ff2b2b" :slant italic :weight bold)
+ '(font-lock-escape-face :foreground "#ff7a00" :weight bold)
+ '(font-lock-delimiter-face :foreground "#7ed8f7" :weight bold)
+ '(font-lock-bracket-face :foreground "#7ed8f7" :weight bold)
+ '(font-lock-punctuation-face :foreground "#7ed8f7" :weight bold)
+ '(font-lock-misc-punctuation-face :foreground "#ff7a00" :weight bold)
+ '(hl-line :background "#202b2b")
+ '(cursor :background "#00f0e0")
+ '(region :background "#2a4848")
+ '(line-number :foreground "#b39ddb" :weight bold) ; pastel mor (önce cyan #00f0e0, Monokai'de tok mor #7e57c2)
+ '(line-number-current-line :foreground "#ff5f00" :weight bold) ; doygun neon turuncu
+ '(show-paren-match :foreground "#00f0e0" :background "#2c3535" :weight bold)
+ '(lsp-inlay-hint-face :foreground "#e8f2f2" :background "#081014" :slant italic :height 0.9)
  ;; NvChad pill mode boxes
- '(doom-modeline-evil-normal-state   :foreground "#1e1f1c" :background "#a6e22e" :weight bold :box (:line-width (6 . 2) :color "#a6e22e"))
- '(doom-modeline-evil-insert-state   :foreground "#1e1f1c" :background "#66d9ef" :weight bold :box (:line-width (6 . 2) :color "#66d9ef"))
- '(doom-modeline-evil-visual-state   :foreground "#1e1f1c" :background "#ae81ff" :weight bold :box (:line-width (6 . 2) :color "#ae81ff"))
- '(doom-modeline-evil-replace-state  :foreground "#1e1f1c" :background "#f92672" :weight bold :box (:line-width (6 . 2) :color "#f92672"))
- '(doom-modeline-evil-emacs-state    :foreground "#1e1f1c" :background "#fd971f" :weight bold :box (:line-width (6 . 2) :color "#fd971f"))
- '(doom-modeline-evil-motion-state   :foreground "#1e1f1c" :background "#e6db74" :weight bold :box (:line-width (6 . 2) :color "#e6db74"))
- '(doom-modeline-evil-operator-state :foreground "#1e1f1c" :background "#fd971f" :weight bold :box (:line-width (6 . 2) :color "#fd971f"))
- '(treemacs-directory-face     :foreground "#66d9ef" :weight bold)
- '(treemacs-root-face          :foreground "#ae81ff" :weight bold :height 1.1)
- '(treemacs-file-face          :foreground "#f8f8f2")
- '(treemacs-git-modified-face  :foreground "#fd971f")
- '(treemacs-git-untracked-face :foreground "#a6e22e")
- '(treemacs-git-added-face     :foreground "#a6e22e")
- '(treemacs-git-conflict-face  :foreground "#f92672")
- '(dired-directory :foreground "#66d9ef" :weight bold)
- '(dired-symlink   :foreground "#66d9ef" :slant italic)
- '(dired-header    :foreground "#ae81ff" :weight bold)
+ '(doom-modeline-evil-normal-state   :foreground "#081014" :background "#00ff9f" :weight bold :box (:line-width (6 . 2) :color "#00ff9f"))
+ '(doom-modeline-evil-insert-state   :foreground "#081014" :background "#00d4ff" :weight bold :box (:line-width (6 . 2) :color "#00d4ff"))
+ '(doom-modeline-evil-visual-state   :foreground "#081014" :background "#c07dff" :weight bold :box (:line-width (6 . 2) :color "#c07dff"))
+ '(doom-modeline-evil-replace-state  :foreground "#081014" :background "#ff2b2b" :weight bold :box (:line-width (6 . 2) :color "#ff2b2b"))
+ '(doom-modeline-evil-emacs-state    :foreground "#081014" :background "#ff7a00" :weight bold :box (:line-width (6 . 2) :color "#ff7a00"))
+ '(doom-modeline-evil-motion-state   :foreground "#081014" :background "#ff4df0" :weight bold :box (:line-width (6 . 2) :color "#ff4df0"))
+ '(doom-modeline-evil-operator-state :foreground "#081014" :background "#ff7a00" :weight bold :box (:line-width (6 . 2) :color "#ff7a00"))
+ '(treemacs-directory-face     :foreground "#00d4ff" :weight bold)
+ '(treemacs-root-face          :foreground "#c07dff" :weight bold :height 1.1)
+ '(treemacs-file-face          :foreground "#c8e6e6")
+ '(treemacs-git-modified-face  :foreground "#ff7a00")
+ '(treemacs-git-untracked-face :foreground "#00ff9f")
+ '(treemacs-git-added-face     :foreground "#00ff9f")
+ '(treemacs-git-conflict-face  :foreground "#ff2b2b")
+ '(dired-directory :foreground "#00d4ff" :weight bold)
+ '(dired-symlink   :foreground "#00d4ff" :slant italic)
+ '(dired-header    :foreground "#c07dff" :weight bold)
  ;; web / html (beyaz kalan tag/attr)
- '(web-mode-html-tag-face :foreground "#FD971F" :weight bold)
- '(web-mode-html-attr-name-face :foreground "#A6E22E" :weight bold)
- '(web-mode-html-attr-value-face :foreground "#E6DB74" :weight bold)
- '(web-mode-keyword-face :foreground "#F92672" :weight bold)
- '(web-mode-function-name-face :foreground "#A6E22E" :weight bold)
- '(web-mode-string-face :foreground "#E6DB74" :weight bold)
- '(web-mode-type-face :foreground "#66D9EF" :slant italic :weight bold)
- '(web-mode-variable-name-face :foreground "#FD971F" :weight bold)
- '(web-mode-constant-face :foreground "#AE81FF" :weight bold))
+ '(web-mode-html-tag-face :foreground "#ff7a00" :weight bold)
+ '(web-mode-html-attr-name-face :foreground "#00ff9f" :weight bold)
+ '(web-mode-html-attr-value-face :foreground "#ff4df0" :weight bold)
+ '(web-mode-keyword-face :foreground "#ff2b2b" :weight bold)
+ '(web-mode-function-name-face :foreground "#00ff9f" :weight bold)
+ '(web-mode-string-face :foreground "#ff4df0" :weight bold)
+ '(web-mode-type-face :foreground "#00d4ff" :slant italic :weight bold)
+ '(web-mode-variable-name-face :foreground "#ff7a00" :weight bold)
+ '(web-mode-constant-face :foreground "#c07dff" :weight bold))
+
+;;; --- GITS: config.el'deki sabit (Monokai/Material) renkleri ez ---------------
+;; config.el, config.org'dan yeniden tangle ediliyor (literate) → oradaki hex'ler
+;; elle değiştirilince geri dönüyor.  Bu dosya en son yüklendiği için burada ezilir.
+(custom-set-faces!
+ '(centaur-tabs-default :background "#111515" :foreground "#111515")
+ '(centaur-tabs-unselected :background "#111515" :foreground "#e8f2f2" :height 0.9)
+ '(centaur-tabs-selected :background "#2c3535" :foreground "#ffb86b" :weight bold :height 0.9)
+ '(centaur-tabs-unselected-modified :background "#111515" :foreground "#ff7a00" :height 0.9)
+ '(centaur-tabs-selected-modified :background "#2c3535" :foreground "#ff7a00" :weight bold :height 0.9)
+ '(centaur-tabs-active-bar-face :background "#ff7a00")
+ '(header-line :background "#111515" :foreground "#e8f2f2" :box nil :underline nil :overline nil)
+ '(tab-line :background "#111515" :foreground "#e8f2f2" :box nil :underline nil :overline nil :height 0.9)
+ '(doom-modeline-bar :background "#ff7a00")
+ '(doom-modeline-buffer-file :foreground "#e6ffff" :weight bold)
+ '(doom-modeline-buffer-modified :foreground "#ff2b2b" :weight bold)
+ '(doom-modeline-buffer-major-mode :foreground "#00d4ff" :weight bold)
+ '(doom-modeline-git-added :foreground "#00ff9f")
+ '(doom-modeline-git-removed :foreground "#ff2b2b")
+ '(doom-modeline-git-modified :foreground "#ff7a00"))
+;; config.el bunları `after!' içinde set ediyor → aynı yerde, ondan sonra ez.
+(after! lsp-ui
+  (custom-set-faces!
+   '(lsp-ui-doc-background :background "#222929")
+   '(lsp-ui-doc-header :foreground "#ff2b2b" :weight bold)))
+(after! lsp-inlay-hints
+  (custom-set-faces!
+   '(lsp-inlay-hint-face :foreground "#e8f2f2" :background "#081014" :slant italic :height 0.9)))
+
+
+;;; Terminal ergonomics: vterm + eat
+(defun my/terminal-kill-buffer-and-window ()
+  "Kill the current terminal buffer and its window, like Vim q."
+  (interactive)
+  (kill-buffer-and-window))
+
+(defun my/terminal-copy-region ()
+  "Copy the active terminal selection to the kill ring and clipboard."
+  (interactive)
+  (unless (use-region-p)
+    (user-error "Once fareyle veya klavyeyle bir metin secin"))
+  (kill-ring-save (region-beginning) (region-end))
+  (deactivate-mark)
+  (message "Secim panoya kopyalandi"))
+
+(defun my/terminal-colon-or-quit ()
+  "Close on :q; forward other colon-prefixed input to the live terminal."
+  (interactive)
+  (let ((event (read-event)))
+    (if (eq event ?q)
+        (my/terminal-kill-buffer-and-window)
+      (let ((text (concat ":" (if (characterp event)
+                                    (string event)
+                                  (key-description (vector event))))))
+        (cond ((derived-mode-p (quote vterm-mode)) (vterm-send-string text))
+              ((derived-mode-p (quote eat-mode))
+               (eat-term-send-string eat-terminal text)))))))
+
+(after! eat
+  ;; TUI normalde char map kullanir; iki harita da ayni kisayollari alir.
+  (dolist (map (list eat-char-mode-map eat-semi-char-mode-map))
+    (define-key map (kbd "C-S-v") (function eat-yank))
+    (define-key map (kbd "C-S-c") (function my/terminal-copy-region))
+    (define-key map (kbd ":") (function my/terminal-colon-or-quit))))
+
+(defun my/vterm-mouse-scroll (event)
+  "Enter Vterm copy mode on scrolling, then scroll normally."
+  (interactive "e")
+  (unless vterm-copy-mode
+    (vterm-copy-mode 1))
+  (mwheel-scroll event))
+
+(defun my/vterm-exit-copy-mode ()
+  "Return to the live Vterm without copying text."
+  (interactive)
+  (vterm-copy-mode -1))
+
+(after! vterm
+  ;; Vterm scrollback copy mode da kaydirilabilir; tekerlek onu otomatik acar.
+  (dolist (map (list vterm-mode-map vterm-copy-mode-map))
+    (define-key map [wheel-up] (function my/vterm-mouse-scroll))
+    (define-key map [wheel-down] (function my/vterm-mouse-scroll))
+    (define-key map (kbd "C-S-v") (function vterm-yank))
+    (define-key map (kbd "C-S-c") (function my/terminal-copy-region))
+    (define-key map (kbd ":") (function my/terminal-colon-or-quit)))
+  (define-key vterm-copy-mode-map [escape] (function my/vterm-exit-copy-mode)))
 
 (provide 'personal)
 ;;; personal.el ends here
