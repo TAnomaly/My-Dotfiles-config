@@ -2,10 +2,10 @@
 
 * Doom Settings
 #+begin_src emacs-lisp
-;; Tema: ~/.doom.d/themes/ghostty-theme.el (aktif Ghostty paleti).
+;; Tema: ~/.doom.d/themes/tugmonokai-theme.el (nvim tugmonokai paleti, bg #1e1f1c).
 ;; personal.el de aynısını set eder; burada doom-one bırakmak lsp-ui-doc theme
-;; reload'unda temayı gömüyordu.  Eski Monokai: tugmonokai-theme.el (duruyor).
-(setq doom-theme 'ghostty)
+;; reload'unda temayı gömüyordu.  Eski zeminler: ghostty-theme.el (icy, duruyor).
+(setq doom-theme 'tugmonokai)
 ;; Font: ghostty ile aynı — FiraCode Nerd Font Regular 11pt (ghostty font-thicken=false).
 ;; DİKKAT: aile adı fc-list çıktısıyla birebir olmalı; ":size 11.0" ondalık =
 ;; punto (tam sayı piksel demek).
@@ -203,14 +203,15 @@
   (setq display-time-format "%H:%M %d-%m-%Y"))
 
 (custom-set-faces
- '(doom-modeline-bar ((t (:background "#FFA500"))))
- '(doom-modeline-buffer-file ((t (:foreground "#FFFFFF" :weight bold))))
+ '(doom-modeline-bar ((t (:background "#fd971f"))))
+ '(doom-modeline-buffer-file ((t (:foreground "#f8f8f2" :weight bold))))
  '(doom-modeline-buffer-modified ((t (:foreground "#EF5350" :weight bold))))
- '(doom-modeline-buffer-major-mode ((t (:foreground "#42A5F5" :weight bold))))
- '(doom-modeline-evil-normal-state ((t (:background "#4CAF50" :foreground "#000000" :weight bold))))
- '(doom-modeline-evil-insert-state ((t (:background "#2196F3" :foreground "#FFFFFF" :weight bold))))
- '(doom-modeline-evil-visual-state ((t (:background "#FFC107" :foreground "#000000" :weight bold))))
- '(doom-modeline-evil-replace-state ((t (:background "#F44336" :foreground "#FFFFFF" :weight bold))))
+ '(doom-modeline-buffer-major-mode ((t (:foreground "#66d9ef" :weight bold))))
+ ;; Evil pill gövde renkleri = nvim lualine a bölümleri; uçlar personal.el §2b.
+ '(doom-modeline-evil-normal-state ((t (:background "#a6e22e" :foreground "#1e1f1c" :weight bold))))
+ '(doom-modeline-evil-insert-state ((t (:background "#66d9ef" :foreground "#1e1f1c" :weight bold))))
+ '(doom-modeline-evil-visual-state ((t (:background "#ae81ff" :foreground "#1e1f1c" :weight bold))))
+ '(doom-modeline-evil-replace-state ((t (:background "#f92672" :foreground "#1e1f1c" :weight bold))))
  '(doom-modeline-git-added ((t (:foreground "#66BB6A"))))
  '(doom-modeline-git-removed ((t (:foreground "#EF5350"))))
  '(doom-modeline-git-modified ((t (:foreground "#FFC107")))))

@@ -5,8 +5,9 @@
 ;; edited, like packages.el).  Loading last also overrides a stale config.el.
 
 ;;; --- Theme -----------------------------------------------------------------
-;; Monokai blue/green accents, an icy blue-black background and white comments.
-(setq doom-theme 'ghostty)
+;; nvim tugmonokai paleti (bg #1e1f1c, bg_light #2a2a2a, fg #f8f8f2) — tıpkı
+;; nvim'deki gibi.  Eski icy ghostty zemini: personal.el.darkbg.bak.
+(setq doom-theme 'tugmonokai)
 
 ;;; --- Font: nvim/alacritty eşleşmesi ------------------------------------------
 ;; Alacritty (nvim'in gördüğü): FiraCode Nerd Font SemBd, 11pt.  Buradaki aile
@@ -634,13 +635,13 @@ bazen kod penceresini yeniden kullanıp aynı kodu ikinci kez gösteriyordu."
   (doom-modeline-def-segment resize-grip
     "Mode-line tutamacı: sürükleyerek pencere yüksekliğini değiştir."
     (propertize
-     (if (char-displayable-p ?↕) " ↕ " " = ")
-     'help-echo "Sürükle: pencere yüksekliğini değiştir (yatay split)\nDikey split için pencereler arasındaki | çizgisini sürükle"
-     'face '(:foreground "#4fb3d4" :weight bold)
+     " ⠿ "
+     'help-echo "Çerçeveyi taşımak için sürükle; pencere yüksekliğini değiştirmek için Shift+sürükle"
+     'face '(:foreground "#4fb3d4" :weight normal)
      'mouse-face 'mode-line-highlight
      'local-map (let ((map (make-sparse-keymap)))
-                  (define-key map [mode-line down-mouse-1] #'mouse-drag-mode-line)
-                  (define-key map [mode-line mouse-1] #'ignore)
+                  (define-key map [mode-line drag-mouse-1] #'mouse-drag-frame)
+                  (define-key map [mode-line down-mouse-1] #'mouse-drag-frame)
                   (define-key map [mode-line S-down-mouse-1] #'mouse-drag-mode-line)
                   map)))
   ;; Ana modeline'ların sağına tutamacı ekle
@@ -706,7 +707,7 @@ bazen kod penceresini yeniden kullanıp aynı kodu ikinci kez gösteriyordu."
     (evil-terminal-cursor-changer-activate)))
 
 (defun my/tty-cursor-color ()
-  (send-string-to-terminal "\e]12;#4fb3d4\a"))
+  (send-string-to-terminal "\e]12;#fd971f\a"))
 (add-hook 'tty-setup-hook #'my/tty-cursor-color 90)
 (add-hook 'kill-emacs-hook
           (lambda ()
@@ -724,15 +725,21 @@ bazen kod penceresini yeniden kullanıp aynı kodu ikinci kez gösteriyordu."
 (add-to-list 'default-frame-alist '(fullscreen . maximized))
 
 ;;; --- GUI: frameless window with comfortable inner spacing ------------------
+;; Set decorations before frame creation so Mutter sees the correct extents.
+(setq frame-resize-pixelwise t
+      window-resize-pixelwise t)
+(dolist (parameter '((undecorated . t) (internal-border-width . 0)))
+  (add-to-list 'initial-frame-alist parameter)
+  (add-to-list 'default-frame-alist parameter))
 (defun my/apply-gui-window-style (&optional frame)
-  "Hide decorations and add 12px padding to top-level graphical FRAME."
+  "Hide decorations and remove internal padding from graphical FRAME."
   (let ((frame (or frame (selected-frame))))
     (when (and (display-graphic-p frame)
                (not (frame-parent frame))
                (not (eq (frame-parameter frame 'minibuffer) 'only)))
       (modify-frame-parameters frame
                                '((undecorated . t)
-                                 (internal-border-width . 12))))))
+                                 (internal-border-width . 0))))))
 (add-hook 'after-make-frame-functions #'my/apply-gui-window-style)
 (add-hook 'window-setup-hook #'my/apply-gui-window-style)
 (dolist (frame (frame-list))
@@ -741,15 +748,28 @@ bazen kod penceresini yeniden kullanıp aynı kodu ikinci kez gösteriyordu."
 ;;; --- Background transparency (GTK/X11 daemon) ------------------------------
 ;; ARGB visual is chosen at frame creation, so the value must live in
 ;; `default-frame-alist'; setting it on an existing opaque frame is a no-op.
-;; New frames (`emacsclient -c') or a daemon restart pick it up.
-(defvar my/alpha-bg 88 "GUI background opacity; 100 is fully opaque.")
-(setq my/alpha-bg 88)
+;; New frames (`emacsclient -c') open fully opaque to prevent compositor ghosting.
+;; Görünür rengi tema arka planı (Monokai #1e1f1c) belirler; bu ayar
+;; sadece arkadan ne kadar ışık sızdığı.  My/alpha-transparent (93): buzlu his.
+(defvar my/alpha-bg 100 "GUI background opacity; 100 is fully opaque.")
+(defvar my/alpha-transparent 93 "Opacity used by the GUI transparency toggle.")
+(setq my/alpha-bg 100
+      my/alpha-transparent 93)
 (add-to-list 'default-frame-alist `(alpha-background . ,my/alpha-bg))
 (defun my/apply-alpha-bg (&optional frame)
-  (set-frame-parameter frame 'alpha-background my/alpha-bg))
+  (set-frame-parameter frame 'alpha-background my/alpha-bg)
+  (set-frame-parameter frame 'alpha my/alpha-bg))
 (add-hook 'after-make-frame-functions #'my/apply-alpha-bg)
 (dolist (frame (frame-list))
   (when (display-graphic-p frame) (my/apply-alpha-bg frame)))
+;; --- URL'ler EAF browser'da (Emacs içinde, Chromium/Qt WebEngine) açılsın -----
+;; Firefox girişimi "Opening..."da takılıyordu; kullanıcı EAF browser'da kalmak
+;; istiyor. (M-x eaf-open-browser aynı şeyi açar.)
+(defun my/browse-url-eaf (url &rest _)
+  "browse-url handler: URL'i EAF browser buffer'ında aç."
+  (eaf-open-browser url))
+(setq browse-url-browser-function #'my/browse-url-eaf)
+
 ;;; --- Keybindings -----------------------------------------------------------
 (map! :leader
       (:prefix ("t" . "toggle")
@@ -761,7 +781,9 @@ bazen kod penceresini yeniden kullanıp aynı kodu ikinci kez gösteriyordu."
        :desc "opencode (eat)"       "i" #'opencode
        :desc "Codex (eat)"          "x" #'codex
        :desc "Dirvish (fullscreen)" "d" #'dirvish
-       :desc "Dirvish sidebar"      "D" #'dirvish-side)
+       :desc "Dirvish sidebar"      "D" #'dirvish-side
+       :desc "URL → Firefox"        "u" #'browse-url
+       :desc "Linki Firefox'ta aç"  "l" #'browse-url-at-point)
       (:prefix "c"
        :desc "Claude Code (eat)" "i" #'claude))
 
@@ -841,18 +863,55 @@ bazen kod penceresini yeniden kullanıp aynı kodu ikinci kez gösteriyordu."
 (after! treemacs
   (add-hook 'post-command-hook #'my/treemacs-auto-fit))
 
-;; 2) Statusline — doom-modeline `main' lualine düzeninde:
-;;    [mod] branch +N ~N -N  ⚠  │ dosya ●   …   ft  satır:sütun %  saat  ↕
-;;    İnce + flat (radius face ile yok; çalışma alanı sekmeleri native üst şeritte).
+;; 2) Statusline — doom-modeline `main' lualine düzeninde + nvim-style pill:
+;;    [N] branch +N ~N -N ⚠ │ dosya ● … ft satır:sütun % saat ↕
+;;    a bölümü (mod) = renkli yuvarlak uçlu pill, b bölümü (branch/diff/check)
+;;    = #2a2a2a pill, zemin = ana bg (lualine c).  Zemin yüzeyler tema
+;;    reload'da (lsp-ui doc) geri geliyor → burada sabitlenir.
 (defun my/slim-modeline-faces (&rest _)
-  "Statusline'ı küçült + flat tut; tema reload'da (lsp-ui doc) yeniden uygula."
-  (dolist (f '(mode-line mode-line-active mode-line-inactive))
+  "Statusline'ı ince + Monokai zeminli tut; tema reload'da yeniden uygula."
+  (dolist (f '(mode-line mode-line-active))
     (when (facep f)
-      (set-face-attribute f nil :box nil :height 0.9))))
+      (set-face-attribute f nil :box nil :height 0.9 :background "#1e1f1c")))
+  (dolist (f '(mode-line-inactive))
+    (when (facep f)
+      (set-face-attribute f nil :box nil :height 0.9 :background "#181915"))))
 (my/slim-modeline-faces)
 (add-hook 'doom-load-theme-hook #'my/slim-modeline-faces 95)
+
+;; 2b) Rounded pill uçları (nvim lualine section separator'ları gibi):
+;;      gövde + `` / `` — TTY'de de çalışır, sadece Nerd Font ister.
+(defvar my/pill-bg "#2a2a2a"
+  "Pill gövde rengi = nvim lualine b bölümü (bg_light).")
+(defun my/pill--merge-bg (s bg)
+  "S'deki her face span'ına :background BG ekle; face'siz span'lara face olarak."
+  (let ((i 0) (len (length s)))
+    (while (< i len)
+      (let* ((f (get-text-property i 'face s))
+             (j (or (text-property-not-all i len 'face f s) len)))
+        (put-text-property
+         i j 'face
+         (if f
+             (append (if (or (symbolp f)
+                             (and (listp f) (keywordp (car f))))
+                         (list f) f)
+                     (list (list :background bg)))
+           (list (list :background bg)))
+         s)
+        (setq i j)))
+    s))
+(defun my/pill-wrap (orig &rest args)
+  "Segment çıktısını nvim lualine gibi yuvarlak uçlu pill olarak sar."
+  (let ((s (apply orig args)))
+    (if (and (stringp s) (> (length s) 0))
+        (let ((bg my/pill-bg))
+          ;;  /  = Nerd Font powerline caps (lualine left/right_rounded).
+          (concat (propertize "" 'face `(:foreground ,bg))
+                  (my/pill--merge-bg (copy-sequence s) bg)
+                  (propertize "" 'face `(:foreground ,bg))))
+      s)))
 (after! doom-modeline
-  (setq doom-modeline-height 20
+  (setq doom-modeline-height 17
         doom-modeline-bar-width 2
         doom-modeline-window-width-limit 100
         doom-modeline-buffer-encoding nil
@@ -879,14 +938,37 @@ bazen kod penceresini yeniden kullanıp aynı kodu ikinci kez gösteriyordu."
                   (and (> add 0) (propertize (format "+%d " add) 'face '(:foreground "#a6e22e" :weight bold)))
                   (and (> chg 0) (propertize (format "~%d " chg) 'face '(:foreground "#ff9e3b" :weight bold)))
                   (and (> del 0) (propertize (format "-%d " del) 'face '(:foreground "#ff3d81" :weight bold))))))))
+  ;; b bölümü pill: branch (vcs) + git-diff + check — hepsi #2a2a2a gövde,
+  ;; uçlar ``.  (doom-modeline--evil defsubst olduğu için modals ayrı
+  ;; yeniden tanımlanır; bunlar normal defun → advice güvenli.)
+  (dolist (seg '(vcs git-diff check))
+    (advice-add (intern (format "doom-modeline-segment--%s" seg))
+                :around #'my/pill-wrap))
+  ;; a bölümü pill: evil state, durum rengiyle (lualine `mode').
+  (doom-modeline-def-segment modals
+    "Evil state as a rounded pill (nvim lualine `mode' section)."
+    (when doom-modeline-modal
+      (when-let* ((state (bound-and-true-p evil-state))
+                  (face (intern (format "doom-modeline-evil-%s-state" state)))
+                  ((facep face))
+                  (bg (face-attribute face :background nil t))
+                  ((stringp bg)))
+        (concat (doom-modeline-spc)
+                (propertize "" 'face `(:foreground ,bg))
+                ;; tag = evil-xxx-state-tag (doom-modeline ile aynı yol)
+                (propertize (let ((tag (evil-state-property evil-state :tag t)))
+                              (if (stringp tag) tag (funcall tag)))
+                            'face face)
+                (propertize "" 'face `(:foreground ,bg))
+                (doom-modeline-spc)))))
   ;; Tab-bar (çalışma alanı) sekmeleri: statusline'da değil — native üst şerit (§6).
   (doom-modeline-def-modeline 'main
     '(eldoc bar window-number modals matches follow vcs git-diff check buffer-info remote-host selection-info)
     '(compilation objed-state misc-info persp-name grip debug repl lsp process major-mode buffer-position time resize-grip)))
 
-;; 3) TTY: Emacs uses its own icy blue-black background.
+;; 3) TTY: Emacs uses the Monokai background (#1e1f1c = nvim Normal bg).
 ;; GUI opacity is controlled by SPC t T. Terminal opacity belongs to the terminal.
-(defvar my/tty-bg "#0b111b" "Opaque terminal background matching the Emacs theme.")
+(defvar my/tty-bg "#1e1f1c" "Opaque terminal background matching the Emacs theme.")
 (defvar my/tty-transparent nil "TTY'de Emacs arka planı terminalden mi devralınsın.")
 (defun my/tty-transparent-faces (&rest _)
   "TTY: `my/tty-transparent' ise ilgili face'lerin arka planını terminale bırak."
@@ -902,9 +984,20 @@ bazen kod penceresini yeniden kullanıp aynı kodu ikinci kez gösteriyordu."
   "Toggle GUI opacity; terminal opacity is controlled by the terminal itself."
   (interactive)
   (if (display-graphic-p)
-      (let ((a (frame-parameter nil 'alpha-background)))
-        (set-frame-parameter nil 'alpha-background
-                             (if (and a (< a 100)) 100 my/alpha-bg)))
+      (let* ((frame (selected-frame))
+             (a (or (frame-parameter frame 'alpha)
+                    (frame-parameter frame 'alpha-background)
+                    100))
+             (a (if (consp a) (car a) a))
+             ;; Emacs/X may report fully opaque as 1.0, while the GTK
+             ;; parameter reports 100. Normalize both to percentages.
+             (current (if (numberp a)
+                          (if (<= 0 a 1) (* 100 a) a)
+                        100))
+             (opacity (if (>= current 99) my/alpha-transparent 100)))
+        (set-frame-parameter frame 'alpha opacity)
+        (set-frame-parameter frame 'alpha-background opacity)
+        (message "Emacs opacity: %d%%" opacity))
     (message "Terminal saydamligini Emacs degil terminal yonetir; SPC t T GUI Emacs icindir.")))
 
 ;; 3b) Keep the neon syntax colors configured below, without literal `:box'
@@ -1060,48 +1153,50 @@ bazen kod penceresini yeniden kullanıp aynı kodu ikinci kez gösteriyordu."
 ;; custom-set-faces! (bang) re-applies on `doom-load-theme-hook', so LSP /
 ;; semantic-tokens / theme reloads never revert these to the base theme.
 (custom-set-faces!
- '(default :background "#0b111b" :foreground "#4fb3d4") ; icy blue-black background
+ ;; nvim tugmonokai zemini (bg / CursorLine / Visual / MatchParen).
+ '(default :background "#1e1f1c" :foreground "#f8f8f2")
  ;; These dashboard faces inherit syntax faces; keep the coding-mode glow
  ;; boxes from leaking onto the startup menu and Restore session entry.
  '(doom-dashboard-menu-title :inherit font-lock-function-name-face :box nil)
  '(doom-dashboard-menu-desc :inherit font-lock-string-face :box nil)
  ;; nvim tugmonokai Bold Edition — treesit level-4 yüzleri
- '(font-lock-keyword-face :foreground "#ff3d81" :weight bold)
- '(font-lock-function-name-face :foreground "#a6e22e" :weight bold)
- '(font-lock-function-call-face :foreground "#a6e22e" :weight bold)
+ '(font-lock-keyword-face :foreground "#ff0000" :weight bold)
+ '(font-lock-function-name-face :foreground "#0fff00" :weight bold)
+ '(font-lock-function-call-face :foreground "#0fff00" :weight bold)
  ;; Definitions/members: orange; variable references: lavender.
- '(font-lock-variable-name-face :foreground "#ff9e3b" :weight bold)
+ '(font-lock-variable-name-face :foreground "#ff7100" :weight bold)
  '(font-lock-variable-use-face  :foreground "#aa82e8" :weight bold)
- '(font-lock-property-name-face :foreground "#ff9e3b" :weight bold)
- '(font-lock-property-use-face  :foreground "#ff9e3b" :weight bold)
+ '(font-lock-property-name-face :foreground "#ff7100" :weight bold)
+ '(font-lock-property-use-face  :foreground "#ff7100" :weight bold)
  '(font-lock-constant-face :foreground "#996de0" :weight bold)
  '(font-lock-number-face   :foreground "#996de0" :weight bold)
  '(font-lock-type-face :foreground "#4fb3d4" :slant italic :weight bold)
  '(font-lock-builtin-face :foreground "#4fb3d4" :weight bold)
  '(font-lock-string-face :foreground "#aa82e8" :weight bold)
  '(font-lock-comment-face :foreground "#ffffff" :slant italic :weight bold)
- '(font-lock-operator-face :foreground "#ff3d81" :weight bold)
- '(font-lock-preprocessor-face :foreground "#ff3d81" :slant italic :weight bold)
- '(font-lock-escape-face :foreground "#ff9e3b" :weight bold)
+ '(font-lock-operator-face :foreground "#ff0000" :weight bold)
+ '(font-lock-preprocessor-face :foreground "#ff0000" :slant italic :weight bold)
+ '(font-lock-escape-face :foreground "#ff7100" :weight bold)
  '(font-lock-delimiter-face :foreground "#4fb3d4" :weight bold)
  '(font-lock-bracket-face :foreground "#4fb3d4" :weight bold)
  '(font-lock-punctuation-face :foreground "#4fb3d4" :weight bold)
- '(font-lock-misc-punctuation-face :foreground "#ff9e3b" :weight bold)
- '(hl-line :background "#16283b")
- '(cursor :background "#4fb3d4")
- '(region :background "#203b53")
+ '(font-lock-misc-punctuation-face :foreground "#ff7100" :weight bold)
+ '(hl-line :background "#2a2a2a")              ; nvim CursorLine (bg_light)
+ '(cursor :background "#fd971f")               ; nvim cursor (orange)
+ '(region :background "#49483e")               ; nvim selection (gray_dark)
  '(line-number :foreground "#996de0" :weight bold) ; pastel mor (önce cyan #4fb3d4, Monokai'de tok mor #7e57c2)
  '(line-number-current-line :foreground "#ff9e3b" :weight bold) ; doygun neon turuncu
- '(show-paren-match :foreground "#4fb3d4" :background "#16283b" :weight bold)
- '(lsp-inlay-hint-face :foreground "#a9c7c9" :background "#0b111b" :slant italic :height 0.9)
- ;; NvChad pill mode boxes
- '(doom-modeline-evil-normal-state   :foreground "#0b111b" :background "#a6e22e" :weight bold :box (:line-width (6 . 2) :color "#a6e22e"))
- '(doom-modeline-evil-insert-state   :foreground "#0b111b" :background "#4fb3d4" :weight bold :box (:line-width (6 . 2) :color "#4fb3d4"))
- '(doom-modeline-evil-visual-state   :foreground "#0b111b" :background "#996de0" :weight bold :box (:line-width (6 . 2) :color "#996de0"))
- '(doom-modeline-evil-replace-state  :foreground "#0b111b" :background "#ff3d81" :weight bold :box (:line-width (6 . 2) :color "#ff3d81"))
- '(doom-modeline-evil-emacs-state    :foreground "#0b111b" :background "#ff9e3b" :weight bold :box (:line-width (6 . 2) :color "#ff9e3b"))
- '(doom-modeline-evil-motion-state   :foreground "#0b111b" :background "#aa82e8" :weight bold :box (:line-width (6 . 2) :color "#aa82e8"))
- '(doom-modeline-evil-operator-state :foreground "#0b111b" :background "#ff9e3b" :weight bold :box (:line-width (6 . 2) :color "#ff9e3b"))
+ '(show-paren-match :foreground "#ff9e3b" :background "#333333" :weight bold) ; nvim MatchParen
+ '(lsp-inlay-hint-face :foreground "#a9c7c9" :background "#1e1f1c" :slant italic :height 0.9)
+ ;; NvChad pill mode boxes → rounded pill uçları modals segmentinde (§2b);
+ ;; face'ler sadece gövde (bg) + metin rengi verir, box yok.
+ '(doom-modeline-evil-normal-state   :foreground "#1e1f1c" :background "#a6e22e" :weight bold)
+ '(doom-modeline-evil-insert-state   :foreground "#1e1f1c" :background "#66d9ef" :weight bold)
+ '(doom-modeline-evil-visual-state   :foreground "#1e1f1c" :background "#ae81ff" :weight bold)
+ '(doom-modeline-evil-replace-state  :foreground "#1e1f1c" :background "#f92672" :weight bold)
+ '(doom-modeline-evil-emacs-state    :foreground "#1e1f1c" :background "#fd971f" :weight bold)
+ '(doom-modeline-evil-motion-state   :foreground "#1e1f1c" :background "#aa82e8" :weight bold)
+ '(doom-modeline-evil-operator-state :foreground "#1e1f1c" :background "#fd971f" :weight bold)
  '(treemacs-directory-face     :foreground "#4fb3d4" :weight bold)
  '(treemacs-root-face          :foreground "#996de0" :weight bold :height 1.1)
  '(treemacs-file-face          :foreground "#c8e6e6")
@@ -1113,43 +1208,49 @@ bazen kod penceresini yeniden kullanıp aynı kodu ikinci kez gösteriyordu."
  '(dired-symlink   :foreground "#4fb3d4" :slant italic)
  '(dired-header    :foreground "#996de0" :weight bold)
  ;; web / html (beyaz kalan tag/attr)
- '(web-mode-html-tag-face :foreground "#ff9e3b" :weight bold)
- '(web-mode-html-attr-name-face :foreground "#a6e22e" :weight bold)
+ '(web-mode-html-tag-face :foreground "#ff7100" :weight bold)
+ '(web-mode-html-attr-name-face :foreground "#0fff00" :weight bold)
  '(web-mode-html-attr-value-face :foreground "#aa82e8" :weight bold)
- '(web-mode-keyword-face :foreground "#ff3d81" :weight bold)
- '(web-mode-function-name-face :foreground "#a6e22e" :weight bold)
+ '(web-mode-keyword-face :foreground "#ff0000" :weight bold)
+ '(web-mode-function-name-face :foreground "#0fff00" :weight bold)
  '(web-mode-string-face :foreground "#aa82e8" :weight bold)
  '(web-mode-type-face :foreground "#4fb3d4" :slant italic :weight bold)
- '(web-mode-variable-name-face :foreground "#ff9e3b" :weight bold)
+ '(web-mode-variable-name-face :foreground "#ff7100" :weight bold)
  '(web-mode-constant-face :foreground "#996de0" :weight bold))
 
-;;; --- Ghostty: config.el'deki sabit (Monokai/Material) renkleri ez ---------------
+;;; --- Eski icy paletini ez → Monokai (config.el literate tangle'dan geliyor) ---
 ;; config.el, config.org'dan yeniden tangle ediliyor (literate) → oradaki hex'ler
 ;; elle değiştirilince geri dönüyor.  Bu dosya en son yüklendiği için burada ezilir.
 (custom-set-faces!
- '(centaur-tabs-default :background "#0e1724" :foreground "#0e1724")
- '(centaur-tabs-unselected :background "#0e1724" :foreground "#a9c7c9" :height 0.9)
- '(centaur-tabs-selected :background "#16283b" :foreground "#ff9e3b" :weight bold :height 0.9)
- '(centaur-tabs-unselected-modified :background "#0e1724" :foreground "#ff9e3b" :height 0.9)
- '(centaur-tabs-selected-modified :background "#16283b" :foreground "#ff9e3b" :weight bold :height 0.9)
- '(centaur-tabs-active-bar-face :background "#ff9e3b")
- '(header-line :background "#0e1724" :foreground "#a9c7c9" :box nil :underline nil :overline nil)
- '(tab-line :background "#0e1724" :foreground "#a9c7c9" :box nil :underline nil :overline nil :height 0.9)
- '(doom-modeline-bar :background "#ff9e3b")
- '(doom-modeline-buffer-file :foreground "#e6ffff" :weight bold)
+ '(centaur-tabs-default :background "#181915" :foreground "#181915")
+ '(centaur-tabs-unselected :background "#181915" :foreground "#75715e" :height 0.9)
+ '(centaur-tabs-selected :background "#333333" :foreground "#f8f8f2" :weight bold :height 0.9)
+ '(centaur-tabs-unselected-modified :background "#181915" :foreground "#fd971f" :height 0.9)
+ '(centaur-tabs-selected-modified :background "#333333" :foreground "#fd971f" :weight bold :height 0.9)
+ '(centaur-tabs-active-bar-face :background "#fd971f")
+ '(header-line :background "#181915" :foreground "#75715e" :box nil :underline nil :overline nil)
+ '(tab-line :background "#181915" :foreground "#75715e" :box nil :underline nil :overline nil :height 0.9)
+ ;; mode-line zemini = ana bg (lualine c); pill gövdesi #2a2a2a ile ayrışır.
+ '(mode-line :background "#1e1f1c" :box nil)
+ '(mode-line-active :background "#1e1f1c" :box nil)
+ '(mode-line-inactive :background "#181915" :box nil)
+ '(solaire-mode-line-face :background "#1e1f1c")
+ '(solaire-mode-line-inactive-face :background "#181915")
+ '(doom-modeline-bar :background "#fd971f")
+ '(doom-modeline-buffer-file :foreground "#f8f8f2" :weight bold)
  '(doom-modeline-buffer-modified :foreground "#ff3d81" :weight bold)
- '(doom-modeline-buffer-major-mode :foreground "#4fb3d4" :weight bold)
+ '(doom-modeline-buffer-major-mode :foreground "#66d9ef" :weight bold)
  '(doom-modeline-git-added :foreground "#a6e22e")
  '(doom-modeline-git-removed :foreground "#ff3d81")
  '(doom-modeline-git-modified :foreground "#ff9e3b"))
 ;; config.el bunları `after!' içinde set ediyor → aynı yerde, ondan sonra ez.
 (after! lsp-ui
   (custom-set-faces!
-   '(lsp-ui-doc-background :background "#0e1724")
+   '(lsp-ui-doc-background :background "#181915")
    '(lsp-ui-doc-header :foreground "#ff3d81" :weight bold)))
 (after! lsp-inlay-hints
   (custom-set-faces!
-   '(lsp-inlay-hint-face :foreground "#a9c7c9" :background "#0b111b" :slant italic :height 0.9)))
+   '(lsp-inlay-hint-face :foreground "#a9c7c9" :background "#1e1f1c" :slant italic :height 0.9)))
 
 
 ;;; Terminal ergonomics: vterm + eat
@@ -1208,6 +1309,60 @@ bazen kod penceresini yeniden kullanıp aynı kodu ikinci kez gösteriyordu."
     (define-key map (kbd "C-S-c") (function my/terminal-copy-region))
     (define-key map (kbd ":") (function my/terminal-colon-or-quit)))
   (define-key vterm-copy-mode-map [escape] (function my/vterm-exit-copy-mode)))
+
+;;; --- EAF: PDF viewer (Emacs Application Framework) ---------------------------
+;; Doom `:tools pdf` (pdf-tools, epdfinfo derli) `.pdf` dosyalarını hâlâ kendi
+;; `pdf-view-mode'ünde açar; EAF viewer'ı gerektiğinde `M-x eaf-open' ile.
+;; Kurulum: ~/.emacs.d/site-lisp/emacs-application-framework + install-eaf.py
+;; (-i pdf-viewer); PyQt6/pymupdf pip --user ile kurulu.
+(add-to-list 'load-path
+             (expand-file-name "site-lisp/emacs-application-framework" doom-emacs-dir))
+;; Tüm app'ler şart: eaf-open uzantıyı (jpg/mp4/...) app'e çözmek için
+;; `eaf-app-extensions-alist'i require anında doldurur; eksik require'da
+;; "application is not exists" hatası alınır.
+(require 'eaf)
+(require 'eaf-pdf-viewer)
+(require 'eaf-image-viewer)
+(require 'eaf-video-player)
+(require 'eaf-music-player)
+(require 'eaf-browser)
+
+;; --- EAF: play/pause → C-c (SPC artık Doom leader) --------------------------
+;; SPC tüm app'lerden düştü (aşağıda); müzik/video pause'u C-c'e taşıdık.
+(setq eaf-music-player-keybinding
+      (cons '("C-c" . "js_toggle_play_status")
+            (assoc-delete-all "SPC" eaf-music-player-keybinding)))
+(setq eaf-video-player-keybinding
+      (cons '("C-c" . "toggle_play")
+            (assoc-delete-all "SPC" eaf-video-player-keybinding)))
+
+;; --- EAF: SPC → Doom leader (müzik player'da Space pause'u engelle) ---------
+;; EAF mode map'i emulation-mode-map-alists'te evil'den önce geliyor; app
+;; keybinding'lerindeki SPC (ör. music-player'da js_toggle_play_status)
+;; Doom leader'ı eziyordu: Space'e basınca leader açılmıyor, tuş Qt/Vue'a
+;; gidip müziği durduruyordu. SPC'yi EAF'den tamamen al; sayfa kaydırma
+;; zaten C-v / b / M-v ile var. Yeni buffer açıldığında map yeniden
+;; kurulduğu (eaf--gen-keybinding-map) için advice ile her seferinde düşür.
+(defun my/eaf-drop-spc-a (&rest _)
+  "Remove SPC from EAF maps so Doom's leader wins in EAF buffers."
+  (when (keymapp eaf-mode-map*) (define-key eaf-mode-map* (kbd "SPC") nil))
+  (when (keymapp eaf-mode-map)  (define-key eaf-mode-map  (kbd "SPC") nil)))
+(advice-add 'eaf--gen-keybinding-map :after #'my/eaf-drop-spc-a)
+(my/eaf-drop-spc-a)
+
+;; --- EAF: sürükleme kenarı "genişleyerek kayıyordu" → tek debounced update ---
+;; Mouse ile pencere kenarı sürüklenirken window-configuration-change-hook
+;; ve window-size-change-functions HER adımda ayrı update_views çağırıyordu;
+;; Qt view gecikmeli takip edince kenar "genişleyerek" ilerliyordu. macOS'un
+;; kendi çözümü (cancel + 0.08s tek timer) Linux'a da uygulandı: sürükleme
+;; boyunca timer sürekli sıfırlanır → hiç update gitmez; bırakınca 0.08s
+;; içinde tek update, view tam boyuta oturur.
+(defun my/eaf-debounced-size-change (&rest _)
+  "Debounce EAF layout updates instead of one update per drag step."
+  (when (and (boundp 'eaf-epc-process) (eaf-epc-live-p eaf-epc-process))
+    (eaf--schedule-monitor-configuration-change)))
+(advice-add 'eaf-monitor-window-size-change :override #'my/eaf-debounced-size-change)
+(advice-add 'eaf-monitor-configuration-change :override #'eaf--schedule-monitor-configuration-change)
 
 (load! "search-ui")
 

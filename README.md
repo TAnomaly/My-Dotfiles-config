@@ -4,7 +4,7 @@ Personal configuration files (Ubuntu / GNOME, Wayland).
 
 | Directory | What | Lives at |
 |---|---|---|
-| `doom/` | Doom Emacs config — `personal.el` is loaded last and holds all personal overrides; `themes/ghostty-theme.el` uses Monokai blue/green accents, lavender strings, white comments and an icy blue-black background; previous themes are retained | `~/.doom.d/` |
+| `doom/` | Doom Emacs config — `personal.el` is loaded last and holds all personal overrides; active theme is `themes/tugmonokai-theme.el` (the Neovim `tugmonokai` palette, bg `#1e1f1c`); the statusline uses nvim-lualine-style rounded pills; previous themes (ghostty, sentinel, gits) are retained | `~/.doom.d/` |
 | `nvim/` | Neovim (LazyVim) with the `tugmonokai` colorscheme and lualine theme | `~/.config/nvim/` |
 | `ghostty/` | Ghostty terminal config | `~/.config/ghostty/` |
 | `tmux/` | tmux config | `~/.tmux.conf` |
@@ -20,7 +20,7 @@ Copy or symlink each directory's contents to the path in the table, then for Doo
 
 Install `bin/emacs` as `~/.local/bin/emacs` (executable, before `/usr/bin` in PATH). `emacs --nw`, `emacs -nw`, and `emacs --no-window-system` run in the invoking terminal or tmux pane. The launcher only normalizes `--nw` to `-nw` and passes arguments to `/usr/bin/emacs`; it never launches another terminal window.
 
-In graphical Emacs, `SPC t T` toggles 88%/100% opacity. Terminal opacity is managed by the terminal itself; the Emacs palette does not change Ghostty settings.
+In graphical Emacs, `SPC t T` toggles 100%/93% opacity. Terminal opacity is managed by the terminal itself; the Emacs palette does not change Ghostty settings.
 
 ## Top search panel
 
