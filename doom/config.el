@@ -1,7 +1,7 @@
-;; Tema: ~/.doom.d/themes/sentinel-theme.el (Ghostty SENTINEL paleti portu).
+;; Tema: ~/.doom.d/themes/ghostty-theme.el (aktif Ghostty paleti).
 ;; personal.el de aynısını set eder; burada doom-one bırakmak lsp-ui-doc theme
 ;; reload'unda temayı gömüyordu.  Eski Monokai: tugmonokai-theme.el (duruyor).
-(setq doom-theme 'sentinel)
+(setq doom-theme 'ghostty)
 ;; Font: ghostty ile aynı — FiraCode Nerd Font Regular 11pt (ghostty font-thicken=false).
 ;; DİKKAT: aile adı fc-list çıktısıyla birebir olmalı; ":size 11.0" ondalık =
 ;; punto (tam sayı piksel demek).

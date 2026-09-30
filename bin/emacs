@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Accept --nw as an alias for -nw; run Emacs in the invoking terminal.
+args=("$@")
+for i in "${!args[@]}"; do
+    case "${args[i]}" in
+        --) break ;;
+        --nw) args[i]=-nw ;;
+    esac
+done
+exec /usr/bin/emacs "${args[@]}"

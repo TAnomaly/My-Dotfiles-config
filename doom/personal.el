@@ -5,12 +5,8 @@
 ;; edited, like packages.el).  Loading last also overrides a stale config.el.
 
 ;;; --- Theme -----------------------------------------------------------------
-;; gits (~/.doom.d/themes/gits-theme.el = Ghost in the Shell paleti, tugmonokai
-;; yapısı) is the BASE theme.  It must be `doom-theme' so any theme reload —
-;; notably the lsp-ui-doc child frame — reloads it instead of burying it under
-;; doom-one.  Önceki Monokai görünümü: ~/.local/share/gits-theme/revert.sh
-;; (tugmonokai-theme.el duruyor).  SENTINEL: personal.el.sentinel.bak.
-(setq doom-theme 'gits)
+;; Monokai blue/green accents, an icy blue-black background and white comments.
+(setq doom-theme 'ghostty)
 
 ;;; --- Font: nvim/alacritty eşleşmesi ------------------------------------------
 ;; Alacritty (nvim'in gördüğü): FiraCode Nerd Font SemBd, 11pt.  Buradaki aile
@@ -640,7 +636,7 @@ bazen kod penceresini yeniden kullanıp aynı kodu ikinci kez gösteriyordu."
     (propertize
      (if (char-displayable-p ?↕) " ↕ " " = ")
      'help-echo "Sürükle: pencere yüksekliğini değiştir (yatay split)\nDikey split için pencereler arasındaki | çizgisini sürükle"
-     'face '(:foreground "#00f0e0" :weight bold)
+     'face '(:foreground "#4fb3d4" :weight bold)
      'mouse-face 'mode-line-highlight
      'local-map (let ((map (make-sparse-keymap)))
                   (define-key map [mode-line down-mouse-1] #'mouse-drag-mode-line)
@@ -710,7 +706,7 @@ bazen kod penceresini yeniden kullanıp aynı kodu ikinci kez gösteriyordu."
     (evil-terminal-cursor-changer-activate)))
 
 (defun my/tty-cursor-color ()
-  (send-string-to-terminal "\e]12;#00f0e0\a"))
+  (send-string-to-terminal "\e]12;#4fb3d4\a"))
 (add-hook 'tty-setup-hook #'my/tty-cursor-color 90)
 (add-hook 'kill-emacs-hook
           (lambda ()
@@ -746,18 +742,14 @@ bazen kod penceresini yeniden kullanıp aynı kodu ikinci kez gösteriyordu."
 ;; ARGB visual is chosen at frame creation, so the value must live in
 ;; `default-frame-alist'; setting it on an existing opaque frame is a no-op.
 ;; New frames (`emacsclient -c') or a daemon restart pick it up.
-(defvar my/alpha-bg 90 "Background opacity (percent); alacritty'den (96) biraz daha şeffaf.")
+(defvar my/alpha-bg 88 "GUI background opacity; 100 is fully opaque.")
+(setq my/alpha-bg 88)
 (add-to-list 'default-frame-alist `(alpha-background . ,my/alpha-bg))
 (defun my/apply-alpha-bg (&optional frame)
   (set-frame-parameter frame 'alpha-background my/alpha-bg))
 (add-hook 'after-make-frame-functions #'my/apply-alpha-bg)
-(defun my/toggle-transparency ()
-  "Toggle background transparency on the current frame."
-  (interactive)
-  (let ((a (frame-parameter nil 'alpha-background)))
-    (set-frame-parameter nil 'alpha-background
-                         (if (and a (< a 100)) 100 my/alpha-bg))))
-
+(dolist (frame (frame-list))
+  (when (display-graphic-p frame) (my/apply-alpha-bg frame)))
 ;;; --- Keybindings -----------------------------------------------------------
 (map! :leader
       (:prefix ("t" . "toggle")
@@ -884,18 +876,17 @@ bazen kod penceresini yeniden kullanıp aynı kodu ikinci kez gösteriyordu."
             ('delete (cl-incf del))))
         (when (> (+ add chg del) 0)
           (concat " "
-                  (and (> add 0) (propertize (format "+%d " add) 'face '(:foreground "#00ff9f" :weight bold)))
-                  (and (> chg 0) (propertize (format "~%d " chg) 'face '(:foreground "#ff7a00" :weight bold)))
-                  (and (> del 0) (propertize (format "-%d " del) 'face '(:foreground "#ff2b2b" :weight bold))))))))
+                  (and (> add 0) (propertize (format "+%d " add) 'face '(:foreground "#a6e22e" :weight bold)))
+                  (and (> chg 0) (propertize (format "~%d " chg) 'face '(:foreground "#ff9e3b" :weight bold)))
+                  (and (> del 0) (propertize (format "-%d " del) 'face '(:foreground "#ff3d81" :weight bold))))))))
   ;; Tab-bar (çalışma alanı) sekmeleri: statusline'da değil — native üst şerit (§6).
   (doom-modeline-def-modeline 'main
     '(eldoc bar window-number modals matches follow vcs git-diff check buffer-info remote-host selection-info)
     '(compilation objed-state misc-info persp-name grip debug repl lsp process major-mode buffer-position time resize-grip)))
 
-;; 3) Transparanlık (TTY) — t: arka planı terminale bırak (ghostty bg #081014,
-;;    `background-opacity' düşürülürse cam efekti).  nil: opak `my/tty-bg'
-;;    (ghostty bg #081014 ile birebir).  SPC t T: `my/toggle-transparency'.
-(defvar my/tty-bg "#081014" "TTY opak zemin; ghostty `background' (#081014) ve gits-theme `bg' ile aynı olmalı.")
+;; 3) TTY: Emacs uses its own icy blue-black background.
+;; GUI opacity is controlled by SPC t T. Terminal opacity belongs to the terminal.
+(defvar my/tty-bg "#0b111b" "Opaque terminal background matching the Emacs theme.")
 (defvar my/tty-transparent nil "TTY'de Emacs arka planı terminalden mi devralınsın.")
 (defun my/tty-transparent-faces (&rest _)
   "TTY: `my/tty-transparent' ise ilgili face'lerin arka planını terminale bırak."
@@ -908,15 +899,13 @@ bazen kod penceresini yeniden kullanıp aynı kodu ikinci kez gösteriyordu."
 (add-hook 'tty-setup-hook #'my/tty-transparent-faces 95)
 (add-hook 'doom-load-theme-hook #'my/tty-transparent-faces 95)
 (defun my/toggle-transparency ()
-  "GUI: alpha-background toggle.  TTY: arka planı terminale bırak / opak yap."
+  "Toggle GUI opacity; terminal opacity is controlled by the terminal itself."
   (interactive)
   (if (display-graphic-p)
       (let ((a (frame-parameter nil 'alpha-background)))
         (set-frame-parameter nil 'alpha-background
                              (if (and a (< a 100)) 100 my/alpha-bg)))
-    (setq my/tty-transparent (not my/tty-transparent))
-    (my/tty-transparent-faces)
-    (message "TTY transparency: %s" (if my/tty-transparent "on" "off"))))
+    (message "Terminal saydamligini Emacs degil terminal yonetir; SPC t T GUI Emacs icindir.")))
 
 ;; 3b) Keep the neon syntax colors configured below, without literal `:box'
 ;; borders.  Font-lock faces are shared by code, dashboard and recent-file
@@ -965,9 +954,9 @@ bazen kod penceresini yeniden kullanıp aynı kodu ikinci kez gösteriyordu."
             '((insert . "▎") (delete . "▁") (change . "▎")
               (unknown . "▎") (ignored . " ") (reference . " "))
             diff-hl-margin-spec-cache nil)  ; setq :set'i atlar → cache sıfırla
-      (set-face-attribute 'diff-hl-margin-insert nil :foreground "#00ff9f" :background 'unspecified :inherit nil)
-      (set-face-attribute 'diff-hl-margin-change nil :foreground "#ff7a00" :background 'unspecified :inherit nil)
-      (set-face-attribute 'diff-hl-margin-delete nil :foreground "#ff2b2b" :background 'unspecified :inherit nil)
+      (set-face-attribute 'diff-hl-margin-insert nil :foreground "#a6e22e" :background 'unspecified :inherit nil)
+      (set-face-attribute 'diff-hl-margin-change nil :foreground "#ff9e3b" :background 'unspecified :inherit nil)
+      (set-face-attribute 'diff-hl-margin-delete nil :foreground "#ff3d81" :background 'unspecified :inherit nil)
       (diff-hl-margin-mode 1))))
 (add-hook 'tty-setup-hook #'my/tty-diff-hl-margin)
 
@@ -982,7 +971,7 @@ bazen kod penceresini yeniden kullanıp aynı kodu ikinci kez gösteriyordu."
     ;; (nvim nowrap gibi: sağ kenarda işaret yok).
     (set-display-table-slot standard-display-table 'truncation (make-glyph-code ?\s))
     (set-display-table-slot standard-display-table 'wrap (make-glyph-code ?\s))
-    (set-face-attribute 'vertical-border nil :foreground "#344242" :background 'unspecified)))
+    (set-face-attribute 'vertical-border nil :foreground "#3f5f6a" :background 'unspecified)))
 (add-hook 'tty-setup-hook #'my/tty-borders)
 
 ;; 6) Sekmeler — bufferline: nerd ikon + ● modified, "+" düğmesi yok.
@@ -1036,7 +1025,7 @@ bazen kod penceresini yeniden kullanıp aynı kodu ikinci kez gösteriyordu."
                     "╚══════╝╚═╝     ╚═╝╚═╝  ╚═╝ ╚═════╝╚══════╝")))
       (dolist (line banner)
         (insert (+doom-dashboard--center +doom-dashboard--width
-                                         (propertize line 'face '(:foreground "#00f0e0" :weight bold)))
+                                         (propertize line 'face '(:foreground "#4fb3d4" :weight bold)))
                 "\n"))))
   (setq +doom-dashboard-ascii-banner-fn #'my/dashboard-banner)
   (setq +doom-dashboard-menu-sections
@@ -1071,96 +1060,96 @@ bazen kod penceresini yeniden kullanıp aynı kodu ikinci kez gösteriyordu."
 ;; custom-set-faces! (bang) re-applies on `doom-load-theme-hook', so LSP /
 ;; semantic-tokens / theme reloads never revert these to the base theme.
 (custom-set-faces!
- '(default :background "#081014" :foreground "#c8e6e6") ; ghostty config.ghostty background
+ '(default :background "#0b111b" :foreground "#4fb3d4") ; icy blue-black background
  ;; These dashboard faces inherit syntax faces; keep the coding-mode glow
  ;; boxes from leaking onto the startup menu and Restore session entry.
  '(doom-dashboard-menu-title :inherit font-lock-function-name-face :box nil)
  '(doom-dashboard-menu-desc :inherit font-lock-string-face :box nil)
  ;; nvim tugmonokai Bold Edition — treesit level-4 yüzleri
- '(font-lock-keyword-face :foreground "#ff2b2b" :weight bold)
- '(font-lock-function-name-face :foreground "#00ff9f" :weight bold)
- '(font-lock-function-call-face :foreground "#00ff9f" :weight bold)
- ;; param/def/member → turuncu; kullanım → şeftali (krem #c8e6e6 beyaz duruyordu)
- '(font-lock-variable-name-face :foreground "#ff7a00" :weight bold)
- '(font-lock-variable-use-face  :foreground "#ffcc33" :weight bold)
- '(font-lock-property-name-face :foreground "#ff7a00" :weight bold)
- '(font-lock-property-use-face  :foreground "#ff7a00" :weight bold)
- '(font-lock-constant-face :foreground "#c07dff" :weight bold)
- '(font-lock-number-face   :foreground "#c07dff" :weight bold)
- '(font-lock-type-face :foreground "#00d4ff" :slant italic :weight bold)
- '(font-lock-builtin-face :foreground "#00d4ff" :weight bold)
- '(font-lock-string-face :foreground "#ff4df0" :weight bold)
- '(font-lock-comment-face :foreground "#e8f2f2" :slant italic :weight bold)
- '(font-lock-operator-face :foreground "#ff2b2b" :weight bold)
- '(font-lock-preprocessor-face :foreground "#ff2b2b" :slant italic :weight bold)
- '(font-lock-escape-face :foreground "#ff7a00" :weight bold)
- '(font-lock-delimiter-face :foreground "#7ed8f7" :weight bold)
- '(font-lock-bracket-face :foreground "#7ed8f7" :weight bold)
- '(font-lock-punctuation-face :foreground "#7ed8f7" :weight bold)
- '(font-lock-misc-punctuation-face :foreground "#ff7a00" :weight bold)
- '(hl-line :background "#202b2b")
- '(cursor :background "#00f0e0")
- '(region :background "#2a4848")
- '(line-number :foreground "#b39ddb" :weight bold) ; pastel mor (önce cyan #00f0e0, Monokai'de tok mor #7e57c2)
- '(line-number-current-line :foreground "#ff5f00" :weight bold) ; doygun neon turuncu
- '(show-paren-match :foreground "#00f0e0" :background "#2c3535" :weight bold)
- '(lsp-inlay-hint-face :foreground "#e8f2f2" :background "#081014" :slant italic :height 0.9)
+ '(font-lock-keyword-face :foreground "#ff3d81" :weight bold)
+ '(font-lock-function-name-face :foreground "#a6e22e" :weight bold)
+ '(font-lock-function-call-face :foreground "#a6e22e" :weight bold)
+ ;; Definitions/members: orange; variable references: lavender.
+ '(font-lock-variable-name-face :foreground "#ff9e3b" :weight bold)
+ '(font-lock-variable-use-face  :foreground "#aa82e8" :weight bold)
+ '(font-lock-property-name-face :foreground "#ff9e3b" :weight bold)
+ '(font-lock-property-use-face  :foreground "#ff9e3b" :weight bold)
+ '(font-lock-constant-face :foreground "#996de0" :weight bold)
+ '(font-lock-number-face   :foreground "#996de0" :weight bold)
+ '(font-lock-type-face :foreground "#4fb3d4" :slant italic :weight bold)
+ '(font-lock-builtin-face :foreground "#4fb3d4" :weight bold)
+ '(font-lock-string-face :foreground "#aa82e8" :weight bold)
+ '(font-lock-comment-face :foreground "#ffffff" :slant italic :weight bold)
+ '(font-lock-operator-face :foreground "#ff3d81" :weight bold)
+ '(font-lock-preprocessor-face :foreground "#ff3d81" :slant italic :weight bold)
+ '(font-lock-escape-face :foreground "#ff9e3b" :weight bold)
+ '(font-lock-delimiter-face :foreground "#4fb3d4" :weight bold)
+ '(font-lock-bracket-face :foreground "#4fb3d4" :weight bold)
+ '(font-lock-punctuation-face :foreground "#4fb3d4" :weight bold)
+ '(font-lock-misc-punctuation-face :foreground "#ff9e3b" :weight bold)
+ '(hl-line :background "#16283b")
+ '(cursor :background "#4fb3d4")
+ '(region :background "#203b53")
+ '(line-number :foreground "#996de0" :weight bold) ; pastel mor (önce cyan #4fb3d4, Monokai'de tok mor #7e57c2)
+ '(line-number-current-line :foreground "#ff9e3b" :weight bold) ; doygun neon turuncu
+ '(show-paren-match :foreground "#4fb3d4" :background "#16283b" :weight bold)
+ '(lsp-inlay-hint-face :foreground "#a9c7c9" :background "#0b111b" :slant italic :height 0.9)
  ;; NvChad pill mode boxes
- '(doom-modeline-evil-normal-state   :foreground "#081014" :background "#00ff9f" :weight bold :box (:line-width (6 . 2) :color "#00ff9f"))
- '(doom-modeline-evil-insert-state   :foreground "#081014" :background "#00d4ff" :weight bold :box (:line-width (6 . 2) :color "#00d4ff"))
- '(doom-modeline-evil-visual-state   :foreground "#081014" :background "#c07dff" :weight bold :box (:line-width (6 . 2) :color "#c07dff"))
- '(doom-modeline-evil-replace-state  :foreground "#081014" :background "#ff2b2b" :weight bold :box (:line-width (6 . 2) :color "#ff2b2b"))
- '(doom-modeline-evil-emacs-state    :foreground "#081014" :background "#ff7a00" :weight bold :box (:line-width (6 . 2) :color "#ff7a00"))
- '(doom-modeline-evil-motion-state   :foreground "#081014" :background "#ff4df0" :weight bold :box (:line-width (6 . 2) :color "#ff4df0"))
- '(doom-modeline-evil-operator-state :foreground "#081014" :background "#ff7a00" :weight bold :box (:line-width (6 . 2) :color "#ff7a00"))
- '(treemacs-directory-face     :foreground "#00d4ff" :weight bold)
- '(treemacs-root-face          :foreground "#c07dff" :weight bold :height 1.1)
+ '(doom-modeline-evil-normal-state   :foreground "#0b111b" :background "#a6e22e" :weight bold :box (:line-width (6 . 2) :color "#a6e22e"))
+ '(doom-modeline-evil-insert-state   :foreground "#0b111b" :background "#4fb3d4" :weight bold :box (:line-width (6 . 2) :color "#4fb3d4"))
+ '(doom-modeline-evil-visual-state   :foreground "#0b111b" :background "#996de0" :weight bold :box (:line-width (6 . 2) :color "#996de0"))
+ '(doom-modeline-evil-replace-state  :foreground "#0b111b" :background "#ff3d81" :weight bold :box (:line-width (6 . 2) :color "#ff3d81"))
+ '(doom-modeline-evil-emacs-state    :foreground "#0b111b" :background "#ff9e3b" :weight bold :box (:line-width (6 . 2) :color "#ff9e3b"))
+ '(doom-modeline-evil-motion-state   :foreground "#0b111b" :background "#aa82e8" :weight bold :box (:line-width (6 . 2) :color "#aa82e8"))
+ '(doom-modeline-evil-operator-state :foreground "#0b111b" :background "#ff9e3b" :weight bold :box (:line-width (6 . 2) :color "#ff9e3b"))
+ '(treemacs-directory-face     :foreground "#4fb3d4" :weight bold)
+ '(treemacs-root-face          :foreground "#996de0" :weight bold :height 1.1)
  '(treemacs-file-face          :foreground "#c8e6e6")
- '(treemacs-git-modified-face  :foreground "#ff7a00")
- '(treemacs-git-untracked-face :foreground "#00ff9f")
- '(treemacs-git-added-face     :foreground "#00ff9f")
- '(treemacs-git-conflict-face  :foreground "#ff2b2b")
- '(dired-directory :foreground "#00d4ff" :weight bold)
- '(dired-symlink   :foreground "#00d4ff" :slant italic)
- '(dired-header    :foreground "#c07dff" :weight bold)
+ '(treemacs-git-modified-face  :foreground "#ff9e3b")
+ '(treemacs-git-untracked-face :foreground "#a6e22e")
+ '(treemacs-git-added-face     :foreground "#a6e22e")
+ '(treemacs-git-conflict-face  :foreground "#ff3d81")
+ '(dired-directory :foreground "#4fb3d4" :weight bold)
+ '(dired-symlink   :foreground "#4fb3d4" :slant italic)
+ '(dired-header    :foreground "#996de0" :weight bold)
  ;; web / html (beyaz kalan tag/attr)
- '(web-mode-html-tag-face :foreground "#ff7a00" :weight bold)
- '(web-mode-html-attr-name-face :foreground "#00ff9f" :weight bold)
- '(web-mode-html-attr-value-face :foreground "#ff4df0" :weight bold)
- '(web-mode-keyword-face :foreground "#ff2b2b" :weight bold)
- '(web-mode-function-name-face :foreground "#00ff9f" :weight bold)
- '(web-mode-string-face :foreground "#ff4df0" :weight bold)
- '(web-mode-type-face :foreground "#00d4ff" :slant italic :weight bold)
- '(web-mode-variable-name-face :foreground "#ff7a00" :weight bold)
- '(web-mode-constant-face :foreground "#c07dff" :weight bold))
+ '(web-mode-html-tag-face :foreground "#ff9e3b" :weight bold)
+ '(web-mode-html-attr-name-face :foreground "#a6e22e" :weight bold)
+ '(web-mode-html-attr-value-face :foreground "#aa82e8" :weight bold)
+ '(web-mode-keyword-face :foreground "#ff3d81" :weight bold)
+ '(web-mode-function-name-face :foreground "#a6e22e" :weight bold)
+ '(web-mode-string-face :foreground "#aa82e8" :weight bold)
+ '(web-mode-type-face :foreground "#4fb3d4" :slant italic :weight bold)
+ '(web-mode-variable-name-face :foreground "#ff9e3b" :weight bold)
+ '(web-mode-constant-face :foreground "#996de0" :weight bold))
 
-;;; --- GITS: config.el'deki sabit (Monokai/Material) renkleri ez ---------------
+;;; --- Ghostty: config.el'deki sabit (Monokai/Material) renkleri ez ---------------
 ;; config.el, config.org'dan yeniden tangle ediliyor (literate) → oradaki hex'ler
 ;; elle değiştirilince geri dönüyor.  Bu dosya en son yüklendiği için burada ezilir.
 (custom-set-faces!
- '(centaur-tabs-default :background "#111515" :foreground "#111515")
- '(centaur-tabs-unselected :background "#111515" :foreground "#e8f2f2" :height 0.9)
- '(centaur-tabs-selected :background "#2c3535" :foreground "#ffb86b" :weight bold :height 0.9)
- '(centaur-tabs-unselected-modified :background "#111515" :foreground "#ff7a00" :height 0.9)
- '(centaur-tabs-selected-modified :background "#2c3535" :foreground "#ff7a00" :weight bold :height 0.9)
- '(centaur-tabs-active-bar-face :background "#ff7a00")
- '(header-line :background "#111515" :foreground "#e8f2f2" :box nil :underline nil :overline nil)
- '(tab-line :background "#111515" :foreground "#e8f2f2" :box nil :underline nil :overline nil :height 0.9)
- '(doom-modeline-bar :background "#ff7a00")
+ '(centaur-tabs-default :background "#0e1724" :foreground "#0e1724")
+ '(centaur-tabs-unselected :background "#0e1724" :foreground "#a9c7c9" :height 0.9)
+ '(centaur-tabs-selected :background "#16283b" :foreground "#ff9e3b" :weight bold :height 0.9)
+ '(centaur-tabs-unselected-modified :background "#0e1724" :foreground "#ff9e3b" :height 0.9)
+ '(centaur-tabs-selected-modified :background "#16283b" :foreground "#ff9e3b" :weight bold :height 0.9)
+ '(centaur-tabs-active-bar-face :background "#ff9e3b")
+ '(header-line :background "#0e1724" :foreground "#a9c7c9" :box nil :underline nil :overline nil)
+ '(tab-line :background "#0e1724" :foreground "#a9c7c9" :box nil :underline nil :overline nil :height 0.9)
+ '(doom-modeline-bar :background "#ff9e3b")
  '(doom-modeline-buffer-file :foreground "#e6ffff" :weight bold)
- '(doom-modeline-buffer-modified :foreground "#ff2b2b" :weight bold)
- '(doom-modeline-buffer-major-mode :foreground "#00d4ff" :weight bold)
- '(doom-modeline-git-added :foreground "#00ff9f")
- '(doom-modeline-git-removed :foreground "#ff2b2b")
- '(doom-modeline-git-modified :foreground "#ff7a00"))
+ '(doom-modeline-buffer-modified :foreground "#ff3d81" :weight bold)
+ '(doom-modeline-buffer-major-mode :foreground "#4fb3d4" :weight bold)
+ '(doom-modeline-git-added :foreground "#a6e22e")
+ '(doom-modeline-git-removed :foreground "#ff3d81")
+ '(doom-modeline-git-modified :foreground "#ff9e3b"))
 ;; config.el bunları `after!' içinde set ediyor → aynı yerde, ondan sonra ez.
 (after! lsp-ui
   (custom-set-faces!
-   '(lsp-ui-doc-background :background "#222929")
-   '(lsp-ui-doc-header :foreground "#ff2b2b" :weight bold)))
+   '(lsp-ui-doc-background :background "#0e1724")
+   '(lsp-ui-doc-header :foreground "#ff3d81" :weight bold)))
 (after! lsp-inlay-hints
   (custom-set-faces!
-   '(lsp-inlay-hint-face :foreground "#e8f2f2" :background "#081014" :slant italic :height 0.9)))
+   '(lsp-inlay-hint-face :foreground "#a9c7c9" :background "#0b111b" :slant italic :height 0.9)))
 
 
 ;;; Terminal ergonomics: vterm + eat
@@ -1219,6 +1208,8 @@ bazen kod penceresini yeniden kullanıp aynı kodu ikinci kez gösteriyordu."
     (define-key map (kbd "C-S-c") (function my/terminal-copy-region))
     (define-key map (kbd ":") (function my/terminal-colon-or-quit)))
   (define-key vterm-copy-mode-map [escape] (function my/vterm-exit-copy-mode)))
+
+(load! "search-ui")
 
 (provide 'personal)
 ;;; personal.el ends here
